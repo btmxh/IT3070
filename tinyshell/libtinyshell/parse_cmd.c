@@ -8,10 +8,13 @@
 
 #ifdef WIN32
 #define ESCAPE_CHAR '^'
+#define IS_QUOTE(c) ((c) == '"')
 #elif defined(__unix__)
 #define ESCAPE_CHAR '\\'
+#define IS_QUOTE(c) ((c) == '"' || (c) == '\'')
 #else
 #define ESCAPE_CHAR '\0'
+#define IS_QUOTE(c) 0
 #endif
 
 static int max_int(int x, int y) { return x > y ? x : y; }
@@ -89,7 +92,7 @@ static parse_codepoint_result parse_next_codepoint(const char **end, char* quote
     return PARSE_CODEPOINT_NORMAL;
   }
 
-  if(**end == '\'' || **end == '"') {
+  if(IS_QUOTE(**end)) {
     if(*quote == '\0') {
       *quote = **end;
       ++*end;
