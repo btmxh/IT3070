@@ -55,3 +55,8 @@ dkms.conf
 build/
 out/
 .clangd
+
+# Valgrind vgcore files
+vgcore.*
+.cache
+.vscode
