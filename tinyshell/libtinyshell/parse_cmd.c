@@ -6,6 +6,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef WIN32
+#define ESCAPE_CHAR '^'
+#elif defined(__unix__)
+#define ESCAPE_CHAR '\\'
+#else
+#define ESCAPE_CHAR '\0'
+#endif
+
 static int max_int(int x, int y) { return x > y ? x : y; }
 
 static char *printf_to_string(const char *fmt, ...) {
@@ -34,13 +42,6 @@ typedef enum {
   PARSE_CODEPOINT_ERROR,
   PARSE_CODEPOINT_AMPERSAND
 } parse_codepoint_result;
-
-typedef enum {
-  PARSE_ARG_NORMAL,
-  PARSE_ARG_EMPTY,
-  PARSE_ARG_FOREGROUND,
-  PARSE_ARG_ERROR,
-} parse_arg_result;
 
 static int vecpush(void **dest, int *len, int *cap, int elemsize,
                    const void *src, int srclen) {
@@ -74,7 +75,7 @@ static parse_codepoint_result parse_next_codepoint(const char **end, char* quote
     return PARSE_CODEPOINT_AMPERSAND;
   }
 
-  if (**end == '\\') {
+  if (**end == ESCAPE_CHAR) {
     ++*end;
     if (**end == '\0') {
       *error = printf_to_string("incomplete escape token");
@@ -110,7 +111,7 @@ static parse_codepoint_result parse_next_codepoint(const char **end, char* quote
   return PARSE_CODEPOINT_NORMAL;
 }
 
-static parse_arg_result parse_arg(const char **end, char **arg, char **error) {
+parse_arg_result parse_arg(const char **end, char **arg, char **error) {
   while (isspace(**end) && **end != '\0')
     ++*end;
 

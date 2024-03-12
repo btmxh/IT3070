@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "platform/unix/parse_cmd.h"
+#include "parse_cmd.h"
 
 void check_testcase_generic(const char* cmd, const char** argv, int fg) {
   command_parse_result result;
@@ -52,6 +52,13 @@ int main() {
   check_testcase("echo \\0", (const char*[]) {"echo", "0", NULL});
   check_testcase("echo \\ \\ ", (const char*[]) {"echo", "  ", NULL});
   check_testcase("echo \\ \\", NULL);
+
+#ifdef WIN32
+  check_testcase("echo ^\'", (const char*[]) {"echo", "\'", NULL});
+  check_testcase("echo ^0", (const char*[]) {"echo", "0", NULL});
+  check_testcase("echo ^ ^ ", (const char*[]) {"echo", "  ", NULL});
+  check_testcase("echo ^ ^", NULL);
+#endif
   check_testcase_fg("echo & ", (const char*[]){"echo", NULL});
   return 0;
 }
