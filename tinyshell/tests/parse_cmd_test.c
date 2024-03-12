@@ -42,16 +42,18 @@ int main() {
   check_testcase("echo", (const char*[]) {"echo", NULL});
   check_testcase("echo 123", (const char*[]) {"echo", "123", NULL});
   check_testcase("echo 123 hello world  ", (const char*[]) {"echo", "123", "hello", "world", NULL});
-  check_testcase("echo 123 'hello world'", (const char*[]) {"echo", "123", "hello world", NULL});
-  check_testcase("echo 123 'hello'a'world'", (const char*[]) {"echo", "123", "helloaworld", NULL});
-  check_testcase("echo 123 'hello'a\"world\"", (const char*[]) {"echo", "123", "helloaworld", NULL});
+  check_testcase("echo 123 \"hello world\"", (const char*[]) {"echo", "123", "hello world", NULL});
+  check_testcase("echo 123 \"hello\"a\"world\"", (const char*[]) {"echo", "123", "helloaworld", NULL});
   check_testcase("echo \"", NULL);
   check_testcase("echo \'\"", NULL);
+  check_testcase("echo \"\'\"", (const char*[]) {"echo", "\'", NULL});
+#ifdef __unix__
   check_testcase("echo \'\"\'", (const char*[]) {"echo", "\"", NULL});
   check_testcase("echo \\\'", (const char*[]) {"echo", "\'", NULL});
   check_testcase("echo \\0", (const char*[]) {"echo", "0", NULL});
   check_testcase("echo \\ \\ ", (const char*[]) {"echo", "  ", NULL});
   check_testcase("echo \\ \\", NULL);
+#endif
 
 #ifdef WIN32
   check_testcase("echo ^\'", (const char*[]) {"echo", "\'", NULL});
