@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 int main() {
-  printf("Hello, Baby!\n");
+  printf("Hello!\n");
   printf("dm");
   printf("dmm");
   printf("dmx3");
