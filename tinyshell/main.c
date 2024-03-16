@@ -5,5 +5,5 @@ int main() {
   printf("dm");
   printf("dmm");
   printf("dmx3");
-  return 0;
+  return 10;
 }
