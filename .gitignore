@@ -53,5 +53,11 @@ dkms.conf
 
 # CMake stuff
 build/
+build-win/
 out/
 .clangd
+
+# Valgrind vgcore files
+vgcore.*
+.cache
+.vscode
