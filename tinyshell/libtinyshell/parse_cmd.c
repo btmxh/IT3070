@@ -25,8 +25,8 @@ typedef enum {
   PARSE_CODEPOINT_AMPERSAND
 } parse_codepoint_result;
 
-static parse_codepoint_result
-parse_next_codepoint(const char **end, char *quote, char cp[8], char **error) {
+static parse_codepoint_result parse_next_codepoint(const char **end, char* quote,
+                                                   char cp[8], char **error) {
   if (**end == '\0') {
     ++*end;
     return PARSE_CODEPOINT_NULL_TERM;
@@ -86,7 +86,7 @@ parse_arg_result parse_arg(const char **end, char **arg, char **error) {
   if (**end == '&') {
     *arg = NULL;
     ++*end;
-    return PARSE_ARG_FOREGROUND;
+    return PARSE_ARG_BACKGROUND;
   }
 
   char quote = '\0';
@@ -144,14 +144,14 @@ int parse_command(const char *command, command_parse_result *result,
 #define ARGV_SCALE_FACTOR 2
   result->argv = NULL;
   result->argc = 0;
-  result->foreground = 0;
+  result->foreground = 1;
   int argv_cap = 0;
   while (1) {
     char *arg;
     parse_arg_result arg_result = parse_arg(&command, &arg, error);
-    if (result->foreground && arg_result != PARSE_ARG_EMPTY) {
+    if (!result->foreground && arg_result != PARSE_ARG_EMPTY) {
       *error = printf_to_string(
-          "& (foreground specifier) should be the last arg in command, as this "
+          "& (background specifier) should be the last arg in command, as this "
           "shell does not support composite commands on Unix");
       goto fail_parse_arg;
     }
@@ -165,8 +165,8 @@ int parse_command(const char *command, command_parse_result *result,
       break;
     case PARSE_ARG_EMPTY:
       goto outer;
-    case PARSE_ARG_FOREGROUND:
-      result->foreground = 1;
+    case PARSE_ARG_BACKGROUND:
+      result->foreground = 0;
       break;
     case PARSE_ARG_ERROR:
       goto fail_parse_arg;

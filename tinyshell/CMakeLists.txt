@@ -30,12 +30,15 @@ target_include_directories(libtinyshell PUBLIC libtinyshell)
 add_executable(tinyshell main.c)
 target_link_libraries(tinyshell PUBLIC libtinyshell)
 
+enable_testing()
+
 foreach(TEST_FILE ${tinyshell_TESTS})
   cmake_path(SET path ${TEST_FILE})
   cmake_path(GET path FILENAME filename)
   cmake_path(REMOVE_EXTENSION filename OUTPUT_VARIABLE execname)
   add_executable(${execname} ${TEST_FILE})
   target_link_libraries(${execname} PUBLIC libtinyshell)
+  add_test(NAME ${execname} COMMAND $<TARGET_FILE:${execname}>)
 endforeach()
 
 
