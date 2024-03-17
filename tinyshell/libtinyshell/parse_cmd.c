@@ -50,7 +50,6 @@ static int vecpush(void **dest, int *len, int *cap, int elemsize,
                    const void *src, int srclen) {
   const float scale_factor = 1.5;
   if (*len + srclen >= *cap) {
-    assert(*len == *cap);
     int new_cap = max_int(*cap * scale_factor, *len + srclen);
     void *new_dest = realloc(*dest, new_cap * elemsize);
     if (!new_dest) {
