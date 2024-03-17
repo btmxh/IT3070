@@ -12,3 +12,11 @@ int tinyshell_run(tinyshell* shell) {
 
 void tinyshell_destroy(tinyshell* shell) {
 }
+
+const char* tinyshell_get_current_directory(const tinyshell* shell) {
+  return ".";
+}
+
+const char* tinyshell_get_path_env(const tinyshell* shell) {
+  return "";
+}
