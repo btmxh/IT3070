@@ -40,7 +40,7 @@ inline static int vecpush(void **dest, int *len, int *cap, int elemsize,
     *cap = new_cap;
   }
 
-  memcpy(*dest + *len * elemsize, src, srclen * elemsize);
+  memcpy((char*)*dest + *len * elemsize, src, srclen * elemsize);
   *len += srclen;
   return 1;
 }

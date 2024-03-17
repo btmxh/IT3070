@@ -2,6 +2,7 @@
 
 #ifdef WIN32
 // ...
+typedef void process;
 #else
 #include <spawn.h>
 typedef pid_t process;
