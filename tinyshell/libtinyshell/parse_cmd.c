@@ -8,12 +8,9 @@
 #ifdef WIN32
 #define ESCAPE_CHAR '^'
 #define IS_QUOTE(c) ((c) == '"')
-#elif defined(__unix__)
+#else
 #define ESCAPE_CHAR '\\'
 #define IS_QUOTE(c) ((c) == '"' || (c) == '\'')
-#else
-#define ESCAPE_CHAR '\0'
-#define IS_QUOTE(c) 0
 #endif
 
 typedef enum {
@@ -99,7 +96,7 @@ parse_arg_result parse_arg(const char **end, char **arg, char **error) {
     switch (typ) {
     case PARSE_CODEPOINT_NORMAL: {
       int n = strlen(c); // currently n == 1
-      if (!vecpush((void **)arg, &arg_len, &arg_cap, 1, c, strlen(c))) {
+      if (!vecpush((void **)arg, &arg_len, &arg_cap, 1, c, (int)strlen(c))) {
         *error = printf_to_string("unable to allocate memory for arg");
         goto fail_realloc_arg;
       }
@@ -190,7 +187,6 @@ fail_realloc_arg:
     free(result->argv[i]);
   }
   free(result->argv);
-fail_parse_executable:
   return 0;
 }
 

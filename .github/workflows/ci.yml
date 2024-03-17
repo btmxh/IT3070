@@ -9,14 +9,17 @@ on:
       - master
 
 jobs:
-  test:
-    runs-on: [macos-12, ubuntu-22.04, windows-2022]
+  test-tinyshell:
+    strategy:
+      matrix:
+        os: [macos-12, ubuntu-22.04, windows-2022]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Configure
-        run: cmake -S. -Bbuild
+        run: cmake -Stinyshell -Btinyshell/build -DCMAKE_BUILD_TYPE=Release
       - name: Build
-        run: cmake --build build
+        run: cmake --build tinyshell/build --config Release -j 2
       - name: Test
-        working-directory: build
-        run: ctest
+        working-directory: tinyshell/build
+        run: ctest -C Release
