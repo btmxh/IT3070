@@ -9,12 +9,9 @@
 #ifdef WIN32
 #define ESCAPE_CHAR '^'
 #define IS_QUOTE(c) ((c) == '"')
-#elif defined(__unix__)
+#else
 #define ESCAPE_CHAR '\\'
 #define IS_QUOTE(c) ((c) == '"' || (c) == '\'')
-#else
-#define ESCAPE_CHAR '\0'
-#define IS_QUOTE(c) 0
 #endif
 
 static int max_int(int x, int y) { return x > y ? x : y; }
@@ -50,7 +47,7 @@ static int vecpush(void **dest, int *len, int *cap, int elemsize,
                    const void *src, int srclen) {
   const float scale_factor = 1.5;
   if (*len + srclen >= *cap) {
-    int new_cap = max_int(*cap * scale_factor, *len + srclen);
+    int new_cap = max_int((int)(*cap * scale_factor), *len + srclen);
     void *new_dest = realloc(*dest, new_cap * elemsize);
     if (!new_dest) {
       return 0;
@@ -60,7 +57,7 @@ static int vecpush(void **dest, int *len, int *cap, int elemsize,
     *cap = new_cap;
   }
 
-  memcpy(*dest + *len * elemsize, src, srclen * elemsize);
+  memcpy((char*)*dest + *len * elemsize, src, srclen * elemsize);
   *len += srclen;
   return 1;
 }
@@ -139,7 +136,7 @@ parse_arg_result parse_arg(const char **end, char **arg, char **error) {
     switch (typ) {
     case PARSE_CODEPOINT_NORMAL: {
       int n = strlen(c); // currently n == 1
-      if (!vecpush((void **)arg, &arg_len, &arg_cap, 1, c, strlen(c))) {
+      if (!vecpush((void **)arg, &arg_len, &arg_cap, 1, c, (int)strlen(c))) {
         *error = printf_to_string("unable to allocate memory for arg");
         goto fail_realloc_arg;
       }
@@ -230,7 +227,6 @@ fail_realloc_arg:
     free(result->argv[i]);
   }
   free(result->argv);
-fail_parse_executable:
   return 0;
 }
 
