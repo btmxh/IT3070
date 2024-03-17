@@ -39,6 +39,8 @@ void check_testcase_bg(const char* cmd, const char** argv) {
 }
 
 int main() {
+  check_testcase("", (const char*[]) {NULL});
+  check_testcase("  ", (const char*[]) {NULL});
   check_testcase("echo", (const char*[]) {"echo", NULL});
   check_testcase("echo 123", (const char*[]) {"echo", "123", NULL});
   check_testcase("echo 123 hello world  ", (const char*[]) {"echo", "123", "hello", "world", NULL});
