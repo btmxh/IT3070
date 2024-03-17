@@ -4,7 +4,7 @@
 #include "utils.h"
 
 #include <assert.h>
-#include <errno.h>
+#include <signal.h>
 #include <spawn.h>
 #include <stdio.h>
 #include <stdlib.h>
