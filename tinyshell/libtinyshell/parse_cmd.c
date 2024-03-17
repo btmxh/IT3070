@@ -227,7 +227,6 @@ fail_realloc_arg:
     free(result->argv[i]);
   }
   free(result->argv);
-fail_parse_executable:
   return 0;
 }
 
