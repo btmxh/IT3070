@@ -27,6 +27,7 @@ static int call_posix_spawn(process *p, const char *binary_path,
   }
 
   *error = strdup(strerror(error_code));
+  posix_spawn_file_actions_destroy(&fa);
   return 0;
 }
 
