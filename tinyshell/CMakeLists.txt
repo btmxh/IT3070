@@ -5,16 +5,16 @@ cmake_minimum_required(VERSION 3.14)
 project(tinyshell LANGUAGES C CXX)
 
 # Glob all source files and put them into the `shell_SOURCES` CMake variable
-file(GLOB_RECURSE tinyshell_SOURCES CONFIGURE_DEPENDS libtinyshell/*.h libtinyshell/*.c)
-file(GLOB_RECURSE tinyshell_TESTS CONFIGURE_DEPENDS tests/*.c)
+file(GLOB tinyshell_SOURCES CONFIGURE_DEPENDS libtinyshell/*.h libtinyshell/*.c)
+file(GLOB tinyshell_TESTS CONFIGURE_DEPENDS tests/*.c)
 
 # Glob platform source files
 if(UNIX)
-  file(GLOB_RECURSE tinyshell_PLATFORM_SOURCES CONFIGURE_DEPENDS libtinyshell/platform/unix/*.h libtinyshell/platform/unix/*.c)
-  file(GLOB_RECURSE tinyshell_PLATFORM_TESTS CONFIGURE_DEPENDS tests/platform/unix/*.h tests/platform/unix/*.c)
+  file(GLOB tinyshell_PLATFORM_SOURCES CONFIGURE_DEPENDS libtinyshell/platform/unix/*.h libtinyshell/platform/unix/*.c)
+  file(GLOB tinyshell_PLATFORM_TESTS CONFIGURE_DEPENDS tests/platform/unix/*.c)
 elseif(WIN32)
-  file(GLOB_RECURSE tinyshell_PLATFORM_SOURCES CONFIGURE_DEPENDS libtinyshell/platform/windows/*.h libtinyshell/platform/windows/*.c)
-  file(GLOB_RECURSE tinyshell_PLATFORM_TESTS CONFIGURE_DEPENDS tests/platform/windows/*.h tests/platform/windows/*.c)
+  file(GLOB tinyshell_PLATFORM_SOURCES CONFIGURE_DEPENDS libtinyshell/platform/windows/*.h libtinyshell/platform/windows/*.c)
+  file(GLOB tinyshell_PLATFORM_TESTS CONFIGURE_DEPENDS tests/platform/windows/*.c)
 else()
   message(FATAL_ERROR "Unsupported platform")
 endif()
@@ -32,6 +32,7 @@ target_link_libraries(tinyshell PUBLIC libtinyshell)
 
 enable_testing()
 
+message(${tinyshell_TESTS})
 foreach(TEST_FILE ${tinyshell_TESTS})
   cmake_path(SET path ${TEST_FILE})
   cmake_path(GET path FILENAME filename)
