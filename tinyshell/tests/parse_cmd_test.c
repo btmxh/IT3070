@@ -34,11 +34,13 @@ void check_testcase(const char* cmd, const char** argv) {
   check_testcase_generic(cmd, argv, -1);
 }
 
-void check_testcase_fg(const char* cmd, const char** argv) {
-  check_testcase_generic(cmd, argv, 1);
+void check_testcase_bg(const char* cmd, const char** argv) {
+  check_testcase_generic(cmd, argv, 0);
 }
 
 int main() {
+  check_testcase("", (const char*[]) {NULL});
+  check_testcase("  ", (const char*[]) {NULL});
   check_testcase("echo", (const char*[]) {"echo", NULL});
   check_testcase("echo 123", (const char*[]) {"echo", "123", NULL});
   check_testcase("echo 123 hello world  ", (const char*[]) {"echo", "123", "hello", "world", NULL});
@@ -61,6 +63,6 @@ int main() {
   check_testcase("echo ^ ^ ", (const char*[]) {"echo", "  ", NULL});
   check_testcase("echo ^ ^", NULL);
 #endif
-  check_testcase_fg("echo & ", (const char*[]){"echo", NULL});
+  check_testcase_bg("echo & ", (const char*[]){"echo", NULL});
   return 0;
 }

@@ -13,7 +13,7 @@ void command_parse_result_free(command_parse_result *result);
 typedef enum {
   PARSE_ARG_NORMAL,
   PARSE_ARG_EMPTY,
-  PARSE_ARG_FOREGROUND,
+  PARSE_ARG_BACKGROUND,
   PARSE_ARG_ERROR,
 } parse_arg_result;
 
