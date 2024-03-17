@@ -9,7 +9,7 @@ on:
       - master
 
 jobs:
-  test:
+  test-tinyshell:
     strategy:
       matrix:
         os: [macos-12, ubuntu-22.04, windows-2022]
@@ -17,9 +17,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Configure
-        run: cmake -S. -Bbuild
+        run: cmake -Stinyshell -Btinyshell/build
       - name: Build
-        run: cmake --build build
+        run: cmake --build tinyshell/build
       - name: Test
-        working-directory: build
+        working-directory: tinyshell/build
         run: ctest
