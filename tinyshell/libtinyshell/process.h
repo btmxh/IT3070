@@ -2,11 +2,9 @@
 
 #ifdef WIN32
 // ...
-#elif defined(__unix__)
+#else
 #include <spawn.h>
 typedef pid_t process;
-#else
-#error unsupported platform
 #endif
 
 #include "tinyshell.h"
