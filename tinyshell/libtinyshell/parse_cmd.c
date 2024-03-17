@@ -9,12 +9,9 @@
 #ifdef WIN32
 #define ESCAPE_CHAR '^'
 #define IS_QUOTE(c) ((c) == '"')
-#elif defined(__unix__)
+#else
 #define ESCAPE_CHAR '\\'
 #define IS_QUOTE(c) ((c) == '"' || (c) == '\'')
-#else
-#define ESCAPE_CHAR '\0'
-#define IS_QUOTE(c) 0
 #endif
 
 static int max_int(int x, int y) { return x > y ? x : y; }
