@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install valgrind
-        run: apt install valgrind
+        run: sudo apt-get install valgrind
         if: matrix.os == 'ubuntu-22.04'
       - name: Install valgrind
         run: brew install valgrind
