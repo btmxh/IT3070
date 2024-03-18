@@ -1,7 +1,6 @@
 #include "parse_cmd.h"
-#include <assert.h>
+#include "utils.h"
 #include <ctype.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,26 +13,6 @@
 #define IS_QUOTE(c) ((c) == '"' || (c) == '\'')
 #endif
 
-static int max_int(int x, int y) { return x > y ? x : y; }
-
-static char *printf_to_string(const char *fmt, ...) {
-  va_list va;
-  va_start(va, fmt);
-  int length = vsnprintf(NULL, 0, fmt, va);
-  va_end(va);
-
-  char *string = calloc(length + 1, 1);
-  if (string == NULL) {
-    return NULL;
-  }
-
-  va_start(va, fmt);
-  vsnprintf(string, length + 1, fmt, va);
-  va_end(va);
-
-  return string;
-}
-
 typedef enum {
   PARSE_CODEPOINT_NORMAL,
   PARSE_CODEPOINT_QUOTE,
@@ -43,25 +22,6 @@ typedef enum {
   PARSE_CODEPOINT_AMPERSAND
 } parse_codepoint_result;
 
-static int vecpush(void **dest, int *len, int *cap, int elemsize,
-                   const void *src, int srclen) {
-  const float scale_factor = 1.5;
-  if (*len + srclen >= *cap) {
-    int new_cap = max_int((int)(*cap * scale_factor), *len + srclen);
-    void *new_dest = realloc(*dest, new_cap * elemsize);
-    if (!new_dest) {
-      return 0;
-    }
-
-    *dest = new_dest;
-    *cap = new_cap;
-  }
-
-  memcpy((char*)*dest + *len * elemsize, src, srclen * elemsize);
-  *len += srclen;
-  return 1;
-}
-
 static parse_codepoint_result parse_next_codepoint(const char **end, char* quote,
                                                    char cp[8], char **error) {
   if (**end == '\0') {
@@ -69,7 +29,7 @@ static parse_codepoint_result parse_next_codepoint(const char **end, char* quote
     return PARSE_CODEPOINT_NULL_TERM;
   }
 
-  if(**end == '&') {
+  if (**end == '&') {
     ++*end;
     return PARSE_CODEPOINT_AMPERSAND;
   }
@@ -88,12 +48,12 @@ static parse_codepoint_result parse_next_codepoint(const char **end, char* quote
     return PARSE_CODEPOINT_NORMAL;
   }
 
-  if(IS_QUOTE(**end)) {
-    if(*quote == '\0') {
+  if (IS_QUOTE(**end)) {
+    if (*quote == '\0') {
       *quote = **end;
       ++*end;
       return PARSE_CODEPOINT_QUOTE;
-    } else if(*quote == **end) {
+    } else if (*quote == **end) {
       *quote = '\0';
       ++*end;
       return PARSE_CODEPOINT_QUOTE;
@@ -120,7 +80,7 @@ parse_arg_result parse_arg(const char **end, char **arg, char **error) {
     return PARSE_ARG_EMPTY;
   }
 
-  if(**end == '&') {
+  if (**end == '&') {
     *arg = NULL;
     ++*end;
     return PARSE_ARG_BACKGROUND;

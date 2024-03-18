@@ -17,9 +17,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Configure
-        run: cmake -Stinyshell -Btinyshell/build -DCMAKE_BUILD_TYPE=Release
+        run: cmake -Stinyshell -Btinyshell/build -DCMAKE_BUILD_TYPE=Debug
       - name: Build
-        run: cmake --build tinyshell/build --config Release -j 2
+        run: cmake --build tinyshell/build --config Debug -j 2
       - name: Test
         working-directory: tinyshell/build
-        run: ctest -C Release
+        run: ctest -C Debug
