@@ -6,13 +6,13 @@ int main() {
   tinyshell shell;
   process p;
   char* error;
-  int status = process_create(&p, &shell, "/usr/bin/ls -la", &error);
+  int status = process_create(&p, &shell, "/bin/ls -la", &error);
 #ifdef WIN32
   assert(status);
   assert(!error);
   free(error);
-#elif defined(__unix__)
-  assert(status == 0);
+#else
+  assert(status == PROCESS_CREATE_SUCCESS);
   int code = 0;
   status = process_wait_for(&p, &code);
   assert(code == 0);
