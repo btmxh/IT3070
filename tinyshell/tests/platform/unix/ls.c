@@ -6,7 +6,7 @@ int main() {
   tinyshell shell;
   process p;
   char* error;
-  int status = process_create(&p, &shell, "/usr/bin/lst -la", &error);
+  int status = process_create(&p, &shell, "/usr/bin/ls -la", &error);
 #ifdef WIN32
   assert(status);
   assert(!error);
