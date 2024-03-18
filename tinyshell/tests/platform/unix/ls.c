@@ -16,6 +16,8 @@ int main() {
   int code = 0;
   status = process_wait_for(&p, &code);
   assert(code == 0);
+  malloc(10);
+  process_free(&p);
 #endif
   return 0;
 }

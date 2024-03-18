@@ -31,6 +31,8 @@ add_executable(tinyshell main.c)
 target_link_libraries(tinyshell PUBLIC libtinyshell)
 
 enable_testing()
+include(CTest)
+set(MEMORYCHECK_COMMAND_OPTIONS "--error-exitcode=1")
 
 message(${tinyshell_TESTS})
 foreach(TEST_FILE ${tinyshell_TESTS})
