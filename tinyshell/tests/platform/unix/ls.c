@@ -11,7 +11,7 @@ int main() {
   assert(status);
   assert(!error);
   free(error);
-#else
+#elif defined(__unix__)
   assert(status == 0);
   int code = 0;
   status = process_wait_for(&p, &code);
