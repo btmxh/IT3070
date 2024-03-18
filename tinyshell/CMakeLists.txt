@@ -31,6 +31,8 @@ add_executable(tinyshell main.c)
 target_link_libraries(tinyshell PUBLIC libtinyshell)
 
 enable_testing()
+set(MEMORYCHECK_COMMAND_OPTIONS "--leak-check=full --error-exitcode=1")
+include(CTest)
 
 message(${tinyshell_TESTS})
 foreach(TEST_FILE ${tinyshell_TESTS})

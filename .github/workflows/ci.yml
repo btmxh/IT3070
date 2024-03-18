@@ -16,6 +16,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: Install valgrind
+        run: sudo apt-get install valgrind
+        if: matrix.os == 'ubuntu-22.04'
       - name: Configure
         run: cmake -Stinyshell -Btinyshell/build -DCMAKE_BUILD_TYPE=Debug
       - name: Build
@@ -23,3 +26,8 @@ jobs:
       - name: Test
         working-directory: tinyshell/build
         run: ctest -C Debug
+        if: matrix.os != 'ubuntu-22.04'
+      - name: Test (with memcheck)
+        working-directory: tinyshell/build
+        run: ctest -C Debug -T memcheck
+        if: matrix.os == 'ubuntu-22.04'
