@@ -81,7 +81,7 @@ int process_create(process *p, const tinyshell *shell, const char *command,
 
     *error = printf_to_string("command not found: %s", arg0);
     command_parse_result_free(&parse_result);
-    return PROCESS_CREATE_ERROR_NOT_FOUND;
+    return PROCESS_CREATE_ERROR_UNABLE_TO_SPAWN_PROCESS;
   } else {
     int relative = 0;
     const char *binary_path;
