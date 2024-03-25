@@ -16,8 +16,6 @@ typedef enum {
   PROCESS_CREATE_ERROR_INVALID_COMMAND,
   PROCESS_CREATE_ERROR_OUT_OF_MEMORY,
   PROCESS_CREATE_ERROR_UNABLE_TO_SPAWN_PROCESS,
-  PROCESS_CREATE_ERROR_NOT_FOUND,
-  PROCESS_CREATE_ERROR_PERMISSION_DENIED,
 } process_create_error;
 
 int process_create(process *p, const tinyshell *shell, const char *command,

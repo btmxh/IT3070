@@ -96,13 +96,14 @@ int process_create(process *p, const tinyshell *shell, const char *command,
     }
     // binary in current directory or absolute path to binary
     int return_value = PROCESS_CREATE_SUCCESS;
-    if (access(binary_path, X_OK) == 0) {
+    int access_ret;
+    if ((access_ret = access(binary_path, X_OK)) == 0) {
       return_value = call_posix_spawn(p, binary_path, &parse_result, error)
                          ? PROCESS_CREATE_SUCCESS
                          : PROCESS_CREATE_ERROR_UNABLE_TO_SPAWN_PROCESS;
     } else {
-      *error = printf_to_string("permission denied: %s", arg0);
-      return_value = PROCESS_CREATE_ERROR_PERMISSION_DENIED;
+      *error = printf_to_string("%s: %s", strerror(access_ret), arg0);
+      return_value = PROCESS_CREATE_ERROR_UNABLE_TO_SPAWN_PROCESS;
     }
 
     command_parse_result_free(&parse_result);
