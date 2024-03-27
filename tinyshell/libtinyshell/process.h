@@ -18,8 +18,8 @@ typedef enum {
   PROCESS_CREATE_ERROR_UNABLE_TO_SPAWN_PROCESS,
 } process_create_error;
 
-int process_create(process *p, const tinyshell *shell, const char *command,
-                   char **error);
+process_create_error process_create(process *p, const tinyshell *shell,
+                                    const char *command, char **error);
 void process_free(process *p);
 
 // blocking

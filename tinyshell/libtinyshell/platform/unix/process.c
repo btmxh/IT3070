@@ -31,8 +31,8 @@ static int call_posix_spawn(process *p, const char *binary_path,
   return 0;
 }
 
-int process_create(process *p, const tinyshell *shell, const char *command,
-                   char **error) {
+process_create_error process_create(process *p, const tinyshell *shell,
+                                    const char *command, char **error) {
   *error = NULL;
 
   command_parse_result parse_result;

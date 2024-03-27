@@ -1,8 +1,8 @@
 #include "../../process.h"
 #include <utils.h>
 
-int process_create(process *p, const tinyshell *shell, const char *command,
-                   char **error)
+process_create_error process_create(process *p, const tinyshell *shell,
+                                    const char *command, char **error)
 {
     STARTUPINFO info;
     memset(&info, 0, sizeof(info));
@@ -11,12 +11,12 @@ int process_create(process *p, const tinyshell *shell, const char *command,
     if (CreateProcess(NULL, command_copy, NULL, NULL, FALSE, 0, NULL,
                       tinyshell_get_current_directory(shell), &info, p))
     {
-        return 1;
+        return PROCESS_CREATE_SUCCESS;
     }
     else
     {
         free(command_copy);
-        return 0;
+        return PROCESS_CREATE_ERROR_UNABLE_TO_SPAWN_PROCESS;
     }
 }
 void process_free(process *p)
