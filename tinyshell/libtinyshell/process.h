@@ -1,8 +1,8 @@
 #pragma once
 
 #ifdef WIN32
-// ...
-typedef void process;
+#include <Windows.h>
+typedef PROCESS_INFORMATION process;
 #else
 #include <spawn.h>
 typedef pid_t process;
