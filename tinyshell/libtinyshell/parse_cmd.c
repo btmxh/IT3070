@@ -161,7 +161,7 @@ int parse_command(const char *command, command_parse_result *result,
       }
       break;
     case PARSE_ARG_EMPTY:
-      goto outer;
+      goto empty_arg;
     case PARSE_ARG_BACKGROUND:
       result->foreground = 0;
       break;
@@ -178,7 +178,7 @@ outer:;
         "unable to allocate memory to null-terminate argument array");
     goto fail_realloc_arg;
   }
-
+empty_arg:
   return 1;
 
 fail_parse_arg:
