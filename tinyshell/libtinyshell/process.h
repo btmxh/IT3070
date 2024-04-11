@@ -9,6 +9,7 @@ typedef pid_t process;
 #endif
 
 #include "tinyshell.h"
+#include <stdbool.h>
 
 typedef enum {
   PROCESS_CREATE_SUCCESS = 0,
@@ -19,7 +20,8 @@ typedef enum {
 } process_create_error;
 
 process_create_error process_create(process *p, const tinyshell *shell,
-                                    const char *command, char **error);
+                                    const char *command, char **error,
+                                    bool *foreground);
 void process_free(process *p);
 
 // blocking

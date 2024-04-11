@@ -32,7 +32,8 @@ static int call_posix_spawn(process *p, const char *binary_path,
 }
 
 process_create_error process_create(process *p, const tinyshell *shell,
-                                    const char *command, char **error) {
+                                    const char *command, char **error,
+                                    bool *foreground) {
   *error = NULL;
 
   command_parse_result parse_result;
@@ -40,6 +41,7 @@ process_create_error process_create(process *p, const tinyshell *shell,
     return PROCESS_CREATE_ERROR_INVALID_COMMAND;
   }
 
+  *foreground = parse_result.foreground;
   if (parse_result.argc == 0) {
     return PROCESS_CREATE_ERROR_EMPTY_COMMAND;
   }
