@@ -1,7 +1,7 @@
 #pragma once
 
 #ifdef WIN32
-#include <Windows.h>
+#include <windows.h>
 typedef PROCESS_INFORMATION process;
 #else
 #include <spawn.h>
@@ -26,7 +26,7 @@ void process_free(process *p);
 int process_wait_for(process *p, int *status_code);
 
 // non-blocking
-int process_try_wait_for(process *p, int *status_code, int* done);
+int process_try_wait_for(process *p, int *status_code, int *done);
 
 int process_kill(process *p);
 int process_suspend(process *p);
