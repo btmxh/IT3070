@@ -1,7 +1,7 @@
 #pragma once
 
 #ifdef WIN32
-#include <Windows.h>
+#include <windows.h>
 typedef PROCESS_INFORMATION process;
 #else
 #include <spawn.h>
@@ -9,6 +9,7 @@ typedef pid_t process;
 #endif
 
 #include "tinyshell.h"
+#include <stdbool.h>
 
 typedef enum {
   PROCESS_CREATE_SUCCESS = 0,
@@ -19,14 +20,15 @@ typedef enum {
 } process_create_error;
 
 process_create_error process_create(process *p, const tinyshell *shell,
-                                    const char *command, char **error);
+                                    const char *command, char **error,
+                                    int *foreground);
 void process_free(process *p);
 
 // blocking
 int process_wait_for(process *p, int *status_code);
 
 // non-blocking
-int process_try_wait_for(process *p, int *status_code, int* done);
+int process_try_wait_for(process *p, int *status_code, int *done);
 
 int process_kill(process *p);
 int process_suspend(process *p);
