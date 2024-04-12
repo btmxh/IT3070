@@ -21,7 +21,7 @@ typedef enum {
 
 process_create_error process_create(process *p, const tinyshell *shell,
                                     const char *command, char **error,
-                                    bool *foreground);
+                                    int *foreground);
 void process_free(process *p);
 
 // blocking
