@@ -49,7 +49,8 @@ int tinyshell_run(tinyshell *shell)
 
     process p;
     char *error_msg;
-    process_create_error error = process_create(&p, shell, command, &error_msg);
+    int foreground;
+    process_create_error error = process_create(&p, shell, command, &error_msg, &foreground);
     free(command);
 
     if (error == PROCESS_CREATE_ERROR_EMPTY_COMMAND)
