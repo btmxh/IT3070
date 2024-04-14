@@ -44,13 +44,15 @@ static int check_executable(const char *path) {
 }
 
 process_create_error process_create(process *p, const tinyshell *shell,
-                                    const char *command, char **error) {
+                                    const char *command, char **error,
+                                    int *foreground) {
   *error = NULL;
-
   command_parse_result parse_result;
   if (!parse_command(command, &parse_result, error)) {
     return PROCESS_CREATE_ERROR_INVALID_COMMAND;
   }
+
+  *foreground = parse_result.foreground;
 
   if (parse_result.argc == 0) {
     return PROCESS_CREATE_ERROR_EMPTY_COMMAND;
