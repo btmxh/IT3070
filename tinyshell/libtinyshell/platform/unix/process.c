@@ -4,11 +4,13 @@
 #include "utils.h"
 
 #include <assert.h>
-#include <signal.h>
-#include <spawn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <signal.h>
+#include <spawn.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -29,6 +31,16 @@ static int call_posix_spawn(process *p, const char *binary_path,
   *error = strdup(strerror(error_code));
   posix_spawn_file_actions_destroy(&fa);
   return 0;
+}
+
+static int is_regular_file(const char *path) {
+  struct stat s;
+  stat(path, &s);
+  return S_ISREG(s.st_mode);
+}
+
+static int check_executable(const char *path) {
+  return is_regular_file(path) && access(path, X_OK) == 0;
 }
 
 process_create_error process_create(process *p, const tinyshell *shell,
@@ -67,7 +79,7 @@ process_create_error process_create(process *p, const tinyshell *shell,
       binary_path[cur_path_len] = '/';
       memcpy(&binary_path[cur_path_len + 1], arg0, arg0_len + 1);
 
-      if (access(binary_path, X_OK) == 0) {
+      if (check_executable(binary_path)) {
         int success = call_posix_spawn(p, binary_path, &parse_result, error);
         command_parse_result_free(&parse_result);
         free(binary_path);
@@ -97,12 +109,12 @@ process_create_error process_create(process *p, const tinyshell *shell,
     // binary in current directory or absolute path to binary
     int return_value = PROCESS_CREATE_SUCCESS;
     int access_ret;
-    if ((access_ret = access(binary_path, X_OK)) == 0) {
+    if (check_executable(binary_path)) {
       return_value = call_posix_spawn(p, binary_path, &parse_result, error)
                          ? PROCESS_CREATE_SUCCESS
                          : PROCESS_CREATE_ERROR_UNABLE_TO_SPAWN_PROCESS;
     } else {
-      *error = printf_to_string("%s: %s", strerror(access_ret), arg0);
+      *error = printf_to_string("File not executable: %s", arg0);
       return_value = PROCESS_CREATE_ERROR_UNABLE_TO_SPAWN_PROCESS;
     }
 

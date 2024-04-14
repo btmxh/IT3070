@@ -15,7 +15,8 @@ int tinyshell_run(tinyshell *shell)
 {
   printf("Hello, World!\n");
 
-  while (1)
+  int exit = 0;
+  while (!exit)
   {
     printf("$ ");
 
@@ -25,8 +26,13 @@ int tinyshell_run(tinyshell *shell)
 
     while(1) {
       int ch = fgetc(stdin);
-      if(ch == '\n' || ch == EOF) {
+      if(ch == '\n') {
         ch = '\0';
+      }
+
+      if(ch == EOF) {
+        ch = '\0';
+        exit = 1;
       }
 
       char c = (char) ch;

@@ -22,8 +22,8 @@ typedef enum {
   PARSE_CODEPOINT_AMPERSAND
 } parse_codepoint_result;
 
-static parse_codepoint_result parse_next_codepoint(const char **end, char* quote,
-                                                   char cp[8], char **error) {
+static parse_codepoint_result
+parse_next_codepoint(const char **end, char *quote, char cp[8], char **error) {
   if (**end == '\0') {
     ++*end;
     return PARSE_CODEPOINT_NULL_TERM;
@@ -161,7 +161,7 @@ int parse_command(const char *command, command_parse_result *result,
       }
       break;
     case PARSE_ARG_EMPTY:
-      goto empty_arg;
+      goto outer;
     case PARSE_ARG_BACKGROUND:
       result->foreground = 0;
       break;
@@ -178,7 +178,8 @@ outer:;
         "unable to allocate memory to null-terminate argument array");
     goto fail_realloc_arg;
   }
-empty_arg:
+  // the null-terminator does not count
+  --result->argc;
   return 1;
 
 fail_parse_arg:
@@ -191,7 +192,7 @@ fail_realloc_arg:
 }
 
 void command_parse_result_free(command_parse_result *result) {
-  for (int i = 0; i < result->argc - 1; ++i) {
+  for (int i = 0; i < result->argc; ++i) {
     free(result->argv[i]);
   }
   free(result->argv);
