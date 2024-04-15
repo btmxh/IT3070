@@ -1,23 +1,26 @@
+#include "parse_cmd.h"
 #include "process.h"
 #include <assert.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
 
 int main() {
   tinyshell shell;
   process p;
+  command_parse_result cpr;
+  cpr.argc = 2;
+  cpr.argv = malloc(3 * sizeof(char*));
+  cpr.argv[0] = strdup("/bin/ls");
+  cpr.argv[1] = strdup("-la");
+  cpr.argv[2] = NULL;
+  cpr.foreground = 0;
   char* error;
-  int foreground;
-  process_create_error status = process_create(&p, &shell, "/bin/ls -la", &error, &foreground);
-#ifdef WIN32
+  int status = process_create(&p, strdup("/bin/ls"), &shell, "/bin/ls -la", &cpr, &error);
   assert(status);
-  assert(!error);
-  free(error);
-#else
-  assert(status == PROCESS_CREATE_SUCCESS);
   int code = 0;
   status = process_wait_for(&p, &code);
-  assert(code == 0);
+  assert(status && code == 0);
   process_free(&p);
-#endif
   return 0;
 }
