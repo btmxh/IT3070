@@ -1,7 +1,9 @@
 #pragma once
 
+#include <stdbool.h>
+
 typedef struct {
-  int temp; // C requires a struct to have at least 1 member
+  bool exit;
 } tinyshell;
 
 int tinyshell_new(tinyshell* shell);

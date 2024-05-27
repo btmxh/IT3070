@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 int tinyshell_new(tinyshell* shell) {
+  shell->exit = false;
   return 1;
 }
 
