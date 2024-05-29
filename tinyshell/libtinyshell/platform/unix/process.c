@@ -14,23 +14,26 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-static int call_posix_spawn(process *p, const char *binary_path,
-                            command_parse_result *result, char **error) {
+int process_create(process *p, char *binary_path, const tinyshell *shell,
+                   const char *command, command_parse_result *parse_result,
+                   char **error) {
   posix_spawn_file_actions_t fa;
   posix_spawn_file_actions_init(&fa);
   posix_spawn_file_actions_adddup2(&fa, fileno(stdin), 0);
   posix_spawn_file_actions_adddup2(&fa, fileno(stdout), 1);
   posix_spawn_file_actions_adddup2(&fa, fileno(stderr), 2);
 
-  int error_code = posix_spawn(p, binary_path, &fa, NULL, result->argv, NULL);
-  if (error_code == 0) {
-    posix_spawn_file_actions_destroy(&fa);
-    return 1;
+  int error_code =
+      posix_spawn(p, binary_path, &fa, NULL, parse_result->argv, NULL);
+  if (error_code != 0) {
+    *error = printf_to_string("%s", strerror(error_code));
+  } else {
+    free(binary_path);
+    command_parse_result_free(parse_result);
   }
 
-  *error = strdup(strerror(error_code));
   posix_spawn_file_actions_destroy(&fa);
-  return 0;
+  return error_code == 0;
 }
 
 static int is_regular_file(const char *path) {
@@ -43,96 +46,44 @@ static int check_executable(const char *path) {
   return is_regular_file(path) && access(path, X_OK) == 0;
 }
 
-process_create_error process_create(process *p, const tinyshell *shell,
-                                    const char *command, char **error,
-                                    int *foreground) {
-  *error = NULL;
-  command_parse_result parse_result;
-  if (!parse_command(command, &parse_result, error)) {
-    return PROCESS_CREATE_ERROR_INVALID_COMMAND;
+static char *find_executable_no_slash(const char *arg0,
+                                      const tinyshell *shell) {
+  // search in path directories
+  char *path = printf_to_string("%s", tinyshell_get_path_env(shell));
+  if (path == NULL) {
+    return NULL;
   }
 
-  *foreground = parse_result.foreground;
-
-  if (parse_result.argc == 0) {
-    return PROCESS_CREATE_ERROR_EMPTY_COMMAND;
+  char *token = strtok(path, ":");
+  char *binary_path = NULL;
+  while (token != NULL) {
+    binary_path = printf_to_string("%s/%s", token, arg0);
+    if (binary_path != NULL && check_executable(binary_path)) {
+      break;
+    }
+    token = strtok(NULL, ":");
+    free(binary_path);
+    binary_path = NULL;
   }
 
-  assert(parse_result.argc >= 1);
-  const char *arg0 = parse_result.argv[0];
-  size_t arg0_len = strlen(arg0);
+  free(path);
+  return binary_path;
+}
+
+static char *find_executable_slash(const char *arg0, const tinyshell *shell) {
+  if (!check_executable(arg0)) {
+    return NULL;
+  }
+
+  return printf_to_string("%s", arg0);
+}
+
+char *find_executable(const char *arg0, const tinyshell *shell) {
   if (strchr(arg0, '/') == NULL) {
-    // built-in command or binary in PATH
-
-    // TODO: add built-in commands
-    const char *path = tinyshell_get_path_env(shell);
-    while (*path != '\0') {
-      const char *path_end = strchr(path, ':');
-      if (path_end == NULL) {
-        path_end = path + strlen(path);
-      }
-
-      size_t cur_path_len = (size_t)(path_end - path);
-      char *binary_path = malloc((size_t)(path_end - path) + arg0_len + 2);
-      if (!binary_path) {
-        goto fail_alloc_binary_path;
-      }
-      memcpy(binary_path, path, cur_path_len);
-      binary_path[cur_path_len] = '/';
-      memcpy(&binary_path[cur_path_len + 1], arg0, arg0_len + 1);
-
-      if (check_executable(binary_path)) {
-        int success = call_posix_spawn(p, binary_path, &parse_result, error);
-        command_parse_result_free(&parse_result);
-        free(binary_path);
-        return success ? PROCESS_CREATE_SUCCESS
-                       : PROCESS_CREATE_ERROR_UNABLE_TO_SPAWN_PROCESS;
-      }
-
-      path = path_end + 1;
-      free(binary_path);
-    }
-
-    *error = printf_to_string("command not found: %s", arg0);
-    command_parse_result_free(&parse_result);
-    return PROCESS_CREATE_ERROR_UNABLE_TO_SPAWN_PROCESS;
+    return find_executable_no_slash(arg0, shell);
   } else {
-    int relative = 0;
-    const char *binary_path;
-    if (arg0[0] == '/') {
-      // absolute path
-      relative = 0;
-      binary_path = arg0;
-    } else {
-      relative = 1;
-      const char *cwd = tinyshell_get_current_directory(shell);
-      binary_path = printf_to_string("%s/%s", cwd, arg0);
-    }
-    // binary in current directory or absolute path to binary
-    int return_value = PROCESS_CREATE_SUCCESS;
-    int access_ret;
-    if (check_executable(binary_path)) {
-      return_value = call_posix_spawn(p, binary_path, &parse_result, error)
-                         ? PROCESS_CREATE_SUCCESS
-                         : PROCESS_CREATE_ERROR_UNABLE_TO_SPAWN_PROCESS;
-    } else {
-      *error = printf_to_string("File not executable: %s", arg0);
-      return_value = PROCESS_CREATE_ERROR_UNABLE_TO_SPAWN_PROCESS;
-    }
-
-    command_parse_result_free(&parse_result);
-    if (relative) {
-      free((char *)binary_path);
-    }
-    return return_value;
+    return find_executable_slash(arg0, shell);
   }
-
-  return PROCESS_CREATE_SUCCESS;
-
-fail_alloc_binary_path:
-  command_parse_result_free(&parse_result);
-
-  return PROCESS_CREATE_ERROR_OUT_OF_MEMORY;
 }
 
 void process_free(process *p) {}
@@ -171,7 +122,7 @@ int process_try_wait_for(process *p, int *status_code, int *done) {
 }
 
 int process_kill(process *p) {
-  return kill(*p, SIGKILL) != -1 && process_wait_for(p, NULL);
+  return kill(*p, SIGINT) != -1;
 }
 
 int process_suspend(process *p) { return kill(*p, SIGSTOP) != -1; }

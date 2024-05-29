@@ -27,6 +27,10 @@ list(APPEND tinyshell_TESTS ${tinyshell_PLATFORM_TESTS})
 add_library(libtinyshell ${tinyshell_SOURCES})
 target_include_directories(libtinyshell PUBLIC libtinyshell)
 
+if(WIN32)
+  target_link_libraries(libtinyshell PRIVATE shlwapi)
+endif()
+
 add_executable(tinyshell main.c)
 target_link_libraries(tinyshell PUBLIC libtinyshell)
 
@@ -43,5 +47,4 @@ foreach(TEST_FILE ${tinyshell_TESTS})
   target_link_libraries(${execname} PUBLIC libtinyshell)
   add_test(NAME ${execname} COMMAND $<TARGET_FILE:${execname}>)
 endforeach()
-
 
