@@ -1,8 +1,10 @@
 #pragma once
 
 #include "process.h"
+#include <stdbool.h>
 
 typedef struct tinyshell {
+  bool exit;
   int has_fg;
   process fg;
 } tinyshell;

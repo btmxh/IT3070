@@ -83,6 +83,7 @@ int tinyshell_new(tinyshell *shell) {
   current_shell = shell;
   signal(SIGINT, sigint_handler);
   shell->has_fg = 0;
+  shell->exit = false;
   return 1;
 }
 
