@@ -3,6 +3,7 @@
 #include <builtin.h>
 #include <errno.h>
 #include <process.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <utils.h>
@@ -69,8 +70,21 @@ char *get_current_directory() {
   return NULL;
 }
 
+static tinyshell* current_shell;
+
+static void sigint_handler(int s) {
+  if(current_shell->has_fg) {
+    process_kill(&current_shell->fg);
+  }
+}
+
 // Ham nay de tao ra tinyshell moi
-int tinyshell_new(tinyshell *shell) { return 1; }
+int tinyshell_new(tinyshell *shell) {
+  current_shell = shell;
+  signal(SIGINT, sigint_handler);
+  shell->has_fg = 0;
+  return 1;
+}
 
 static void process_command(tinyshell *shell, const char *command) {
   command_parse_result parse_result;
@@ -115,7 +129,10 @@ static void process_command(tinyshell *shell, const char *command) {
   }
 
   if (parse_result.foreground) {
+    shell->has_fg = 1;
+    shell->fg = p;
     process_wait_for(&p, &status_code);
+    shell->has_fg = 0;
     process_free(&p);
   }
 
@@ -131,14 +148,13 @@ fail:
 
 // Ham nay de chay tinyshell
 int tinyshell_run(tinyshell *shell) {
-  printf("Hello, World!\n");
-
   int exit = 0;
   while (!exit) {
     printf("$ ");
     char *command = get_command(&exit);
     process_command(shell, command);
     free(command);
+    puts("");
   }
 
   return 1;

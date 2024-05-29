@@ -122,7 +122,7 @@ int process_try_wait_for(process *p, int *status_code, int *done) {
 }
 
 int process_kill(process *p) {
-  return kill(*p, SIGKILL) != -1 && process_wait_for(p, NULL);
+  return kill(*p, SIGINT) != -1;
 }
 
 int process_suspend(process *p) { return kill(*p, SIGSTOP) != -1; }

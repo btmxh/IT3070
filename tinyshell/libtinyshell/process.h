@@ -12,6 +12,8 @@ typedef pid_t process;
 #include "tinyshell.h"
 #include <stdbool.h>
 
+typedef struct tinyshell tinyshell;
+
 // Win32 API passes arguments by the command line string,
 // while POSIX API requires the arguments array
 int process_create(process *p, char *binary_path, const tinyshell *shell,
