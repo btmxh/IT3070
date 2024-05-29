@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <utils.h>
 
-#ifdef _WIN32
+#ifdef WIN32
 #include <direct.h>
 #else
 #include <unistd.h>
@@ -70,10 +70,10 @@ char *get_current_directory() {
   return NULL;
 }
 
-static tinyshell* current_shell;
+static tinyshell *current_shell;
 
 static void sigint_handler(int s) {
-  if(current_shell->has_fg) {
+  if (current_shell->has_fg) {
     process_kill(&current_shell->fg);
   }
 }
@@ -149,10 +149,15 @@ fail:
 
 // Ham nay de chay tinyshell
 int tinyshell_run(tinyshell *shell) {
-  int exit = 0;
-  while (!exit) {
+  while (!shell->exit) {
+#ifdef WIN32
+    char *cwd = get_current_directory();
+    printf("%s> ", cwd);
+    free(cwd);
+#else
     printf("$ ");
-    char *command = get_command(&exit);
+#endif
+    char *command = get_command(&shell->exit);
     process_command(shell, command);
     free(command);
     puts("");

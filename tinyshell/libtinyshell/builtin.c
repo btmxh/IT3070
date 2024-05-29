@@ -8,8 +8,12 @@
 #include <string.h>
 #include <time.h>
 
-#ifdef _WIN32
+#ifdef WIN32
 #include <direct.h>
+#include <fileapi.h>
+#include <handleapi.h>
+#include <timezoneapi.h>
+#include <winnt.h>
 #else
 #include <dirent.h>
 #include <grp.h>
@@ -17,7 +21,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-
 #endif
 
 int try_run_builtin(tinyshell *shell, command_parse_result *result,
@@ -31,6 +34,26 @@ int try_run_builtin(tinyshell *shell, command_parse_result *result,
     *status_code = builtin_pwd(shell, result->argc, result->argv);
     command_parse_result_free(result);
     return 1;
+  } else if (strcmp(arg0, "date") == 0) {
+    *status_code = builtin_date(shell, result->argc, result->argv);
+    command_parse_result_free(result);
+    return 1;
+  } else if (strcmp(arg0, "time") == 0) {
+    *status_code = builtin_time(shell, result->argc, result->argv);
+    command_parse_result_free(result);
+    return 1;
+  } else if (strcmp(arg0, "exit") == 0) {
+    *status_code = builtin_exit(shell, result->argc, result->argv);
+    command_parse_result_free(result);
+    return 1;
+  } else if (strcmp(arg0, "help") == 0) {
+    *status_code = builtin_help(shell, result->argc, result->argv);
+    command_parse_result_free(result);
+    return 1;
+  } else if (strcmp(arg0, "ls") == 0 || strcmp(arg0, "dir") == 0) {
+    *status_code = builtin_ls(shell, result->argc, result->argv);
+    command_parse_result_free(result);
+    return 1;
   }
 
   return 0;
@@ -42,7 +65,12 @@ int builtin_cd(tinyshell *shell, int argc, char *argv[]) {
     return 1;
   }
 
-  return chdir(argv[1]);
+  if (chdir(argv[1])) {
+    printf("unable to change directory to %s\n", argv[1]);
+    return 1;
+  }
+
+  return 0;
 }
 
 int builtin_pwd(tinyshell *shell, int argc, char *argv[]) {
@@ -98,7 +126,7 @@ int builtin_time(tinyshell *shell, int argc, char *argv[]) {
 }
 
 int builtin_exit(tinyshell *shell, int argc, char *argv[]) {
-  shell->exit = true;
+  shell->exit = 1;
   return 0;
 }
 
@@ -108,6 +136,66 @@ int builtin_help(tinyshell *shell, int argc, char *argv[]) {
 }
 
 #ifdef WIN32
+int builtin_ls(tinyshell *shell, int argc, char *argv[]) {
+  const char *dir = argc <= 1 ? NULL : argv[1];
+
+  char *cwd = get_current_directory();
+  if (!cwd) {
+    puts("unable to retrieve current directory");
+    return 1;
+  }
+
+  printf("\nDirectory of %s\n\n", cwd);
+  free(cwd);
+
+  char *pattern = printf_to_string("%s\\*", dir);
+  if (!pattern) {
+    return 1;
+  }
+
+  WIN32_FIND_DATA file_data;
+  HANDLE find = FindFirstFile(pattern, &file_data);
+  if (find == INVALID_HANDLE_VALUE) {
+    free(pattern);
+    return 0;
+  }
+
+  do {
+    SYSTEMTIME last_access_time;
+    if (!FileTimeToSystemTime(&file_data.ftLastAccessTime, &last_access_time)) {
+      puts("error converting last access time");
+      free(pattern);
+      return 1;
+    }
+
+    int hour = last_access_time.wHour;
+    if (hour == 0) {
+      hour = 12;
+    } else if (hour > 12) {
+      hour -= 12;
+    }
+
+    ULARGE_INTEGER ul;
+    ul.HighPart = file_data.nFileSizeHigh;
+    ul.LowPart = file_data.nFileSizeLow;
+
+    if (file_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+      printf("%02d/%02d/%04d  %02d:%02d %cM   <DIR>        %s\n",
+             last_access_time.wMonth, last_access_time.wDay,
+             last_access_time.wYear, hour, last_access_time.wMinute,
+             last_access_time.wHour < 12 ? 'A' : 'P', file_data.cFileName);
+    } else {
+      printf("%02d/%02d/%04d  %02d:%02d %cM        %7lld %s\n",
+             last_access_time.wMonth, last_access_time.wDay,
+             last_access_time.wYear, hour, last_access_time.wMinute,
+             last_access_time.wHour < 12 ? 'A' : 'P', ul.QuadPart,
+             file_data.cFileName);
+    }
+  } while (FindNextFile(find, &file_data));
+  free(pattern);
+
+  return 0;
+}
 #else
 // Hàm để hiển thị quyền truy cập tệp tin
 static void printPermissions(mode_t mode) {
@@ -129,16 +217,16 @@ static void printPermissions(mode_t mode) {
 
 // Hàm so sánh cho qsort
 static int compare(const void *a, const void *b) {
-  return strcmp(*(const char **)a, *(const char **)b);
+  const struct dirent *ea = a, *eb = b;
+  return strcmp(ea->d_name, eb->d_name);
 }
 
 int builtin_ls(tinyshell *shell, int argc, char *argv[]) {
-  struct dirent *pDirent;
   DIR *pDir;
   struct stat fileStat;
-  char *entries[1000];
-  int count = 0;
   int showDetails = 0;
+  struct dirent *entries = NULL;
+  int entries_len = 0, entries_cap = 0;
 
   // Kiểm tra các tham số đầu vào
   if (argc > 3) {
@@ -182,20 +270,22 @@ int builtin_ls(tinyshell *shell, int argc, char *argv[]) {
   }
 
   // Đọc các entry trong thư mục và lưu tên vào mảng
-  while ((pDirent = readdir(pDir)) != NULL) {
-    entries[count] = strdup(pDirent->d_name);
-    count++;
+  struct dirent *entry;
+  while ((entry = readdir(pDir)) != NULL) {
+    vecpush((void **)&entries, &entries_len, &entries_cap, sizeof *entry, entry,
+            1);
   }
 
   closedir(pDir);
 
   // Sắp xếp các mục theo thứ tự bảng chữ cái
-  qsort(entries, count, sizeof(char *), compare);
+  qsort(entries, entries_len, sizeof *entries, compare);
 
   // In ra tên các mục
-  for (int i = 0; i < count; i++) {
+  printf("total %d\n", entries_len);
+  for (int i = 0; i < entries_len; i++) {
     if (showDetails) {
-      if (stat(entries[i], &fileStat) < 0) {
+      if (stat(entries[i].d_name, &fileStat) < 0) {
         perror("stat");
         continue;
       }
@@ -210,10 +300,10 @@ int builtin_ls(tinyshell *shell, int argc, char *argv[]) {
       strftime(timeBuf, sizeof(timeBuf), "%m-%d-%Y", timeInfo);
       printf("%s ", timeBuf);
     }
-    printf("%s\n", entries[i]);
-    free(entries[i]); // Giải phóng bộ nhớ sau khi in
+    printf("%s\n", entries[i].d_name);
   }
 
+  free(entries); // Giải phóng bộ nhớ sau khi in
   return 0;
 }
 #endif
