@@ -89,7 +89,7 @@ int tinyshell_new(tinyshell *shell) {
 
 static void process_command(tinyshell *shell, const char *command) {
   command_parse_result parse_result;
-  char *error_msg;
+  char *error_msg = NULL;
   if (!parse_command(command, &parse_result, &error_msg)) {
     if (!error_msg) {
       printf("invalid command\n");

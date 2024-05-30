@@ -192,7 +192,6 @@ fail_realloc_arg:
 }
 
 void command_parse_result_free(command_parse_result *result) {
-  printf("%p\n", result->argv[0]);
   for (int i = 0; i < result->argc; ++i) {
     free(result->argv[i]);
   }

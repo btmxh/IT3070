@@ -63,6 +63,7 @@ char *find_executable(const char *arg0, const tinyshell *shell) {
 int process_create(process *p, char *binary_path, const tinyshell *shell,
                    const char *command, command_parse_result *parse_result,
                    char **error) {
+  char *application_path = binary_path;
   char *command_copy = printf_to_string("%s", command);
   if (!command_copy) {
     return 0;
@@ -78,37 +79,38 @@ int process_create(process *p, char *binary_path, const tinyshell *shell,
   // for batch files, we follow the advice in the Win32 documentation page of
   // CreateProcess
   if (string_ends_with(binary_path, ".bat")) {
-    char *bat_command = printf_to_string("cmd.exe /c %s", command_copy);
-    char *new_binary_path = printf_to_string("cmd.exe");
+    char *bat_command =
+        printf_to_string("C:\\Windows\\System32\\cmd.exe /c %s", command_copy);
+    application_path = printf_to_string("C:\\Windows\\Sys1tem32\\cmd.exe");
 
-    if (!bat_command || !new_binary_path) {
+    if (!bat_command || !application_path) {
       free(command_copy);
-      free(binary_path);
+      free(application_path);
       free(bat_command);
-      free(new_binary_path);
       *error = printf_to_string("out of memory");
       return 1;
     }
 
     free(command_copy);
     command_copy = bat_command;
-    free(binary_path);
-    binary_path = new_binary_path;
   }
 
   STARTUPINFO info;
   memset(&info, 0, sizeof(info));
   info.cb = sizeof(info);
   int x;
-  printf("%p\n", command_copy);
-  printf("%p\n", &x);
-  printf("%p\n", binary_path);
-  if (CreateProcess(binary_path, command_copy, NULL, NULL, FALSE, 0, NULL, NULL,
-                    &info, p)) {
+  if (CreateProcess(application_path, command_copy, NULL, NULL, FALSE, 0, NULL,
+                    NULL, &info, p)) {
+    if (application_path != binary_path) {
+      free(binary_path);
+    }
     command_parse_result_free(parse_result);
     return 1;
   }
 
+  if (application_path != binary_path) {
+    free(application_path);
+  }
   free(command_copy);
   return 0;
 }
