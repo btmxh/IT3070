@@ -96,7 +96,7 @@ parse_arg_result parse_arg(const char **end, char **arg, char **error) {
     switch (typ) {
     case PARSE_CODEPOINT_NORMAL: {
       int n = strlen(c); // currently n == 1
-      if (!vecpush((void **)arg, &arg_len, &arg_cap, 1, c, (int)strlen(c))) {
+      if (!vecpush(arg, &arg_len, &arg_cap, 1, c, (int)strlen(c))) {
         *error = printf_to_string("unable to allocate memory for arg");
         goto fail_realloc_arg;
       }
@@ -121,7 +121,7 @@ outer:
   }
 
   char nullterm = '\0';
-  if (!vecpush((void **)arg, &arg_len, &arg_cap, 1, &nullterm, 1)) {
+  if (!vecpush(arg, &arg_len, &arg_cap, 1, &nullterm, 1)) {
     *error = printf_to_string(
         "unable to allocate memory to null-terminate argument string");
     goto fail_realloc_arg;
@@ -154,8 +154,8 @@ int parse_command(const char *command, command_parse_result *result,
     }
     switch (arg_result) {
     case PARSE_ARG_NORMAL:
-      if (!vecpush((void **)&result->argv, &result->argc, &argv_cap,
-                   sizeof(char *), &arg, 1)) {
+      if (!vecpush(&result->argv, &result->argc, &argv_cap, sizeof(char *),
+                   &arg, 1)) {
         printf_to_string("unable to allocate memory for argv");
         goto fail_realloc_arg;
       }
@@ -172,7 +172,7 @@ int parse_command(const char *command, command_parse_result *result,
   }
 outer:;
   char *nullterm = NULL;
-  if (!vecpush((void **)&result->argv, &result->argc, &argv_cap, sizeof(char *),
+  if (!vecpush(&result->argv, &result->argc, &argv_cap, sizeof(char *),
                &nullterm, 1)) {
     printf_to_string(
         "unable to allocate memory to null-terminate argument array");

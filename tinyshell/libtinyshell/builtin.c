@@ -272,8 +272,7 @@ int builtin_ls(tinyshell *shell, int argc, char *argv[]) {
   // Đọc các entry trong thư mục và lưu tên vào mảng
   struct dirent *entry;
   while ((entry = readdir(pDir)) != NULL) {
-    vecpush((void **)&entries, &entries_len, &entries_cap, sizeof *entry, entry,
-            1);
+    vecpush(&entries, &entries_len, &entries_cap, sizeof *entry, entry, 1);
   }
 
   closedir(pDir);

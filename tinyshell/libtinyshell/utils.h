@@ -26,8 +26,9 @@ inline static char *printf_to_string(const char *fmt, ...) {
   return string;
 }
 
-inline static int vecpush(void **dest, int *len, int *cap, int elemsize,
-                   const void *src, int srclen) {
+inline static int vecpush(void * /* T** */ dst, int *len, int *cap,
+                          int elemsize, const void *src, int srclen) {
+  void **dest = (void **)dst;
   const float scale_factor = 1.5;
   if (*len + srclen >= *cap) {
     int new_cap = max_int(*cap * scale_factor, *len + srclen);
