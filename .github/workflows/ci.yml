@@ -20,14 +20,14 @@ jobs:
         run: sudo apt-get install valgrind
         if: matrix.os == 'ubuntu-22.04'
       - name: Configure
-        run: cmake -Stinyshell -Btinyshell/build -DCMAKE_BUILD_TYPE=Debug
+        run: cmake -Stinyshell -Btinyshell/build -DCMAKE_BUILD_TYPE=Debug -DCI_ACTION
       - name: Build
         run: cmake --build tinyshell/build --config Debug -j 2
       - name: Test
         working-directory: tinyshell/build
-        run: ctest -C Debug
+        run: ctest -C Debug -j
         if: matrix.os != 'ubuntu-22.04'
       - name: Test (with memcheck)
         working-directory: tinyshell/build
-        run: ctest -C Debug -T memcheck
+        run: ctest -C Debug -T memcheck -j
         if: matrix.os == 'ubuntu-22.04'
