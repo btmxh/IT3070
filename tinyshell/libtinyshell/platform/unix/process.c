@@ -38,8 +38,7 @@ int process_create(process *p, char *binary_path, const tinyshell *shell,
 
 static int is_regular_file(const char *path) {
   struct stat s;
-  stat(path, &s);
-  return S_ISREG(s.st_mode);
+  return stat(path, &s) == 0 && S_ISREG(s.st_mode);
 }
 
 static int check_executable(const char *path) {
