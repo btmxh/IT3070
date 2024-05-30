@@ -200,7 +200,7 @@ static int try_run_script(tinyshell *shell, const char *path,
   }
   const char extension[] = ".tsh";
 #endif
-  int ext_len = sizeof(extension) - 1, path_len = strlen(path);
+  int ext_len = (int)sizeof(extension) - 1, path_len = (int)strlen(path);
   if (path_len < ext_len || strcmp(&path[path_len - ext_len], extension) != 0) {
     return 0;
   }
