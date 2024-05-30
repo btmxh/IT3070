@@ -15,7 +15,7 @@
 #endif
 
 static char *get_command(int *exit) {
-  void *command = NULL;
+  char *command = NULL;
   int len = 0;
   int cap = 0;
   int ch;
