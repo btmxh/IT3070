@@ -313,7 +313,7 @@ int tinyshell_run(tinyshell *shell) {
     printf("$ ");
 #endif
     char *command = get_command(&shell->exit);
-    if (!_isatty(_fileno(stdin))) {
+    if (!POSIX_WIN32(isatty)(POSIX_WIN32(fileno)(stdin))) {
       puts(command);
     }
     process_command(shell, command, NULL);
