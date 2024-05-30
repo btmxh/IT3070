@@ -167,7 +167,8 @@ int builtin_help(tinyshell *shell, int argc, char *argv[]) {
 
 #ifdef WIN32
 int builtin_ls(tinyshell *shell, int argc, char *argv[]) {
-  char *dir = argc <= 1 ? get_current_directory() : strdup(argv[1]);
+  char *dir =
+      argc <= 1 ? get_current_directory() : printf_to_string("%s", argv[1]);
   if (!dir) {
     puts("unable to get listing directory");
     return 1;

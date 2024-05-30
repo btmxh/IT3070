@@ -287,7 +287,7 @@ static void process_command(tinyshell *shell, const char *command,
   } else {
     shell->bg[bg_job_index].p = p;
     shell->bg[bg_job_index].status = BG_PROCESS_RUNNING;
-    shell->bg[bg_job_index].cmd = strdup(command);
+    shell->bg[bg_job_index].cmd = printf_to_string("%s", command);
   }
 
 check_status_code:
