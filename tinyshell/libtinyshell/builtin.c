@@ -391,7 +391,7 @@ int builtin_kill(tinyshell *shell, int argc, char *argv[]) {
     }
 
     if (!process_wait_for(&p->p, &status_code)) {
-      printf("unable to wait for job to finish\n", argv[i]);
+      printf("unable to wait for job %s to finish\n", argv[i]);
       return 1;
     }
 
