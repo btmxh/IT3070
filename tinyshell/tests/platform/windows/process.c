@@ -14,7 +14,7 @@ int main() {
         printf("%d", GetLastError());
         exit(1);
     }
-    WaitForSingleObject(out.hProcess, 10000);
+    WaitForSingleObject(out.hProcess, 1000);
     TerminateProcess(out.hProcess, 1);
     CloseHandle(out.hProcess);
     CloseHandle(out.hThread);

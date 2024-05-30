@@ -3,5 +3,5 @@
 
 int main() {
     printf("HEllo, WOrld!");
-    Sleep(15000);
+    Sleep(3000);
 }
