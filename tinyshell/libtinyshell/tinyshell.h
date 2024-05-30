@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 typedef struct tinyshell {
-  bool exit;
+  int exit;
   int has_fg;
   process fg;
 } tinyshell;
