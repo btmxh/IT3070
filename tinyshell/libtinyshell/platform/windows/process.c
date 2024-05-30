@@ -69,7 +69,7 @@ int process_create(process *p, char *binary_path, const tinyshell *shell,
     return 0;
   }
 
-  if (parse_result->foreground) {
+  if (!parse_result->foreground) {
     char *ampersand = strrchr(command_copy, '&');
     if (ampersand != NULL) {
       *ampersand = ' ';
@@ -98,7 +98,9 @@ void process_free(process *p) {
 int process_wait_for(process *p, int *status_code) {
   DWORD result = WaitForSingleObject(p->hProcess, INFINITE);
   if (result == WAIT_OBJECT_0) {
-    *status_code = 0;
+    if (status_code) {
+      *status_code = 0;
+    }
     return 1;
   } else {
     return 0;
