@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 3.14)
 project(tinyshell LANGUAGES C CXX)
 
 option(CI_TEST "disable certain tests that could not be run on CI environments" OFF)
+string(REGEX REPLACE "\\\\" "\\\\\\\\" ROOT_TEST "${ROOT_TEST}")
 
 # Glob all source files and put them into the `shell_SOURCES` CMake variable
 file(GLOB tinyshell_SOURCES CONFIGURE_DEPENDS libtinyshell/*.h libtinyshell/*.c)
