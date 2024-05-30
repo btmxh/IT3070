@@ -1,6 +1,9 @@
 #include "../../run_script.h"
 
+#include <direct.h>
+
 int main() {
-  run_script(ROOT_TEST "tests/scripts/start_echo.tbat");
+  _chdir(ROOT_TEST);
+  run_script("tests/scripts/start_echo.tbat");
   return 0;
 }
