@@ -81,7 +81,7 @@ int process_create(process *p, char *binary_path, const tinyshell *shell,
   if (string_ends_with(binary_path, ".bat")) {
     char *bat_command =
         printf_to_string("C:\\Windows\\System32\\cmd.exe /c %s", command_copy);
-    application_path = printf_to_string("C:\\Windows\\Sys1tem32\\cmd.exe");
+    application_path = printf_to_string("C:\\Windows\\System32\\cmd.exe");
 
     if (!bat_command || !application_path) {
       free(command_copy);
