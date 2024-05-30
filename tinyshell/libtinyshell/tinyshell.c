@@ -10,6 +10,7 @@
 
 #ifdef WIN32
 #include <direct.h>
+#include <io.h>
 #else
 #include <unistd.h>
 #endif
@@ -312,7 +313,7 @@ int tinyshell_run(tinyshell *shell) {
     printf("$ ");
 #endif
     char *command = get_command(&shell->exit);
-    if (!isatty(STDIN_FILENO)) {
+    if (!_isatty(_fileno(stdin))) {
       puts(command);
     }
     process_command(shell, command, NULL);
