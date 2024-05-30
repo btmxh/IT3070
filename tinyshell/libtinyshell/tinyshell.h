@@ -1,12 +1,24 @@
 #pragma once
 
 #include "process.h"
-#include <stdbool.h>
+
+typedef struct {
+  process p;
+  char *cmd;
+  enum {
+    BG_PROCESS_RUNNING,
+    BG_PROCESS_STOPPED,
+    BG_PROCESS_EMPTY
+  } status;
+} bg_process;
 
 typedef struct tinyshell {
   int exit;
   int has_fg;
   process fg;
+  bg_process *bg;
+  int bg_cap;
+  char* path;
 } tinyshell;
 
 int tinyshell_new(tinyshell *shell);

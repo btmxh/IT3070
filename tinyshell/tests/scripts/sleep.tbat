@@ -1,0 +1,4 @@
+tests/scripts/stdpath.tbat
+ping 127.0.0.1 -n 11 &
+ping 127.0.0.1 -n 11 &
+jobs

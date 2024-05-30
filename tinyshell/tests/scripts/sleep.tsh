@@ -1,0 +1,4 @@
+tests/scripts/stdpath.tsh
+sleep 10s &
+sleep 10s &
+jobs

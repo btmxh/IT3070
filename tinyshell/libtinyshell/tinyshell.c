@@ -78,16 +78,147 @@ static void sigint_handler(int s) {
   }
 }
 
+static int find_bg_job_index(tinyshell *shell, int *index) {
+  for (int i = 0; i < shell->bg_cap; ++i) {
+    if (shell->bg->status == BG_PROCESS_EMPTY) {
+      if (index) {
+        *index = i;
+      }
+      return 1;
+    }
+  }
+
+  // reallocation needed
+  int new_cap = shell->bg_cap * 2 + 1;
+  bg_process *new_bg = realloc(shell->bg, new_cap * sizeof *new_bg);
+  if (!new_bg) {
+    return 0;
+  }
+
+  if (index) {
+    *index = shell->bg_cap;
+  }
+
+  for (int i = shell->bg_cap; i < new_cap; ++i) {
+    // mark empty slots as finished processes
+    new_bg[i].status = BG_PROCESS_EMPTY;
+  }
+
+  shell->bg_cap = new_cap;
+  shell->bg = new_bg;
+
+  return 1;
+}
+
+static void update_jobs(tinyshell *shell) {
+  for (int i = 0; i < shell->bg_cap; ++i) {
+    if (shell->bg[i].status == BG_PROCESS_EMPTY) {
+      continue;
+    }
+
+    int status_code, done;
+    if (!process_try_wait_for(&shell->bg[i].p, &status_code, &done)) {
+      continue;
+    }
+
+    if (done) {
+      shell->bg[i].status = BG_PROCESS_EMPTY;
+      printf("job %%%d exited with error code %d\n", i + 1, status_code);
+      process_free(&shell->bg[i].p);
+    }
+  }
+}
+
 // Ham nay de tao ra tinyshell moi
 int tinyshell_new(tinyshell *shell) {
   current_shell = shell;
   signal(SIGINT, sigint_handler);
   shell->has_fg = 0;
   shell->exit = false;
+  shell->bg = NULL;
+  shell->bg_cap = 0;
+  shell->path = NULL;
   return 1;
 }
 
-static void process_command(tinyshell *shell, const char *command) {
+static void process_command(tinyshell *shell, const char *command,
+                            int *status_code_ret);
+
+static char *read_file(const char *path) {
+  FILE *f = NULL;
+  char *buffer = NULL;
+
+  f = fopen(path, "r");
+  if (!f) {
+    printf("unable to open script file: %s\n", path);
+    return NULL;
+  }
+
+  fseek(f, 0, SEEK_END);
+  int filesize = ftell(f);
+  fseek(f, 0, SEEK_SET);
+
+  if (ferror(f) || filesize < 0) {
+    printf("unable to determine filesize of script file: %s\n", path);
+    goto fail;
+  }
+
+  buffer = malloc(filesize + 1);
+  if (!buffer) {
+    printf("unable to allocate buffer for script file: %s\n", path);
+    goto fail;
+  }
+
+  if (fread(buffer, 1, filesize, f) != filesize || ferror(f)) {
+    printf("unable to read script file: %s\n", path);
+    goto fail;
+  }
+
+  fclose(f);
+
+  buffer[filesize] = '\0';
+  return buffer;
+
+fail:
+  free(buffer);
+  if (f) {
+    fclose(f);
+  }
+  return NULL;
+}
+
+static int try_run_script(tinyshell *shell, const char *path,
+                          int *status_code) {
+#ifdef WIN32
+  const char extension[] = ".tbat";
+#else
+  if (!strchr(path, '/')) {
+    return 0;
+  }
+  const char extension[] = ".tsh";
+#endif
+  int ext_len = sizeof(extension) - 1, path_len = strlen(path);
+  if (path_len < ext_len || strcmp(&path[path_len - ext_len], extension) != 0) {
+    return 0;
+  }
+
+  char *script_content = read_file(path);
+  if (!script_content) {
+    return 0;
+  }
+
+  char *saveptr;
+  for (char *cmd = reentrant_strtok(script_content, "\n", &saveptr); cmd;
+       cmd = reentrant_strtok(NULL, "\n", &saveptr)) {
+    process_command(shell, cmd, status_code);
+  }
+
+  free(script_content);
+  return 1;
+}
+
+static void process_command(tinyshell *shell, const char *command,
+                            int *status_code_ret) {
   command_parse_result parse_result;
   char *error_msg;
   if (!parse_command(command, &parse_result, &error_msg)) {
@@ -105,18 +236,32 @@ static void process_command(tinyshell *shell, const char *command) {
   }
 
   int status_code = 0;
+  const char *type = "builtin command";
   if (try_run_builtin(shell, &parse_result, &status_code)) {
     goto check_status_code;
   }
 
+  type = "script";
+  if (try_run_script(shell, parse_result.argv[0], &status_code)) {
+    goto check_status_code;
+  }
+
+  type = "process";
   char *binary_path = find_executable(parse_result.argv[0], shell);
   if (!binary_path) {
     printf("executable not found: %s\n", parse_result.argv[0]);
     goto fail;
   }
 
+  int bg_job_index = -1;
+  if (!parse_result.foreground) {
+    if (!find_bg_job_index(shell, &bg_job_index)) {
+      printf("unable to determine job index for background process");
+      goto fail;
+    }
+  }
+
   process p;
-  int foreground;
   if (!process_create(&p, binary_path, shell, command, &parse_result,
                       &error_msg)) {
     if (error_msg != NULL) {
@@ -135,11 +280,19 @@ static void process_command(tinyshell *shell, const char *command) {
     process_wait_for(&p, &status_code);
     shell->has_fg = 0;
     process_free(&p);
+  } else {
+    shell->bg[bg_job_index].p = p;
+    shell->bg[bg_job_index].status = BG_PROCESS_RUNNING;
+    shell->bg[bg_job_index].cmd = strdup(command);
   }
 
 check_status_code:
-  if (status_code != 0) {
-    printf("process exited with error code %d\n", status_code);
+  if (status_code_ret) {
+    *status_code_ret = status_code;
+  } else {
+    if (status_code != 0) {
+      printf("%s exited with error code %d\n", type, status_code);
+    }
   }
 
   return;
@@ -150,6 +303,7 @@ fail:
 // Ham nay de chay tinyshell
 int tinyshell_run(tinyshell *shell) {
   while (!shell->exit) {
+    update_jobs(shell);
 #ifdef WIN32
     char *cwd = get_current_directory();
     printf("%s> ", cwd);
@@ -158,7 +312,10 @@ int tinyshell_run(tinyshell *shell) {
     printf("$ ");
 #endif
     char *command = get_command(&shell->exit);
-    process_command(shell, command);
+    if (!isatty(STDIN_FILENO)) {
+      puts(command);
+    }
+    process_command(shell, command, NULL);
     free(command);
     puts("");
   }
@@ -166,6 +323,19 @@ int tinyshell_run(tinyshell *shell) {
   return 1;
 }
 
-void tinyshell_destroy(tinyshell *shell) {}
+void tinyshell_destroy(tinyshell *shell) {
+  for (int i = 0; i < shell->bg_cap; ++i) {
+    if (shell->bg[i].status != BG_PROCESS_EMPTY) {
+      process_kill(&shell->bg[i].p);
+      process_wait_for(&shell->bg[i].p, NULL);
+      process_free(&shell->bg[i].p);
+    }
+  }
 
-const char *tinyshell_get_path_env(const tinyshell *shell) { return ""; }
+  free(shell->bg);
+  free(shell->path);
+}
+
+const char *tinyshell_get_path_env(const tinyshell *shell) {
+  return shell->path ? shell->path : "";
+}

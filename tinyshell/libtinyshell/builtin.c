@@ -1,8 +1,10 @@
 #include "builtin.h"
 #include "parse_cmd.h"
+#include "process.h"
 #include "tinyshell.h"
 #include "utils.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,6 +54,34 @@ int try_run_builtin(tinyshell *shell, command_parse_result *result,
     return 1;
   } else if (strcmp(arg0, "ls") == 0 || strcmp(arg0, "dir") == 0) {
     *status_code = builtin_ls(shell, result->argc, result->argv);
+    command_parse_result_free(result);
+    return 1;
+  } else if (strcmp(arg0, "jobs") == 0) {
+    *status_code = builtin_jobs(shell, result->argc, result->argv);
+    command_parse_result_free(result);
+    return 1;
+  } else if (strcmp(arg0, "kill") == 0) {
+    *status_code = builtin_kill(shell, result->argc, result->argv);
+    command_parse_result_free(result);
+    return 1;
+  } else if (strcmp(arg0, "stop") == 0) {
+    *status_code = builtin_stop(shell, result->argc, result->argv);
+    command_parse_result_free(result);
+    return 1;
+  } else if (strcmp(arg0, "resume") == 0) {
+    *status_code = builtin_resume(shell, result->argc, result->argv);
+    command_parse_result_free(result);
+    return 1;
+  } else if (strcmp(arg0, "addpath") == 0) {
+    *status_code = builtin_addpath(shell, result->argc, result->argv);
+    command_parse_result_free(result);
+    return 1;
+  } else if (strcmp(arg0, "setpath") == 0) {
+    *status_code = builtin_setpath(shell, result->argc, result->argv);
+    command_parse_result_free(result);
+    return 1;
+  } else if (strcmp(arg0, "path") == 0) {
+    *status_code = builtin_path(shell, result->argc, result->argv);
     command_parse_result_free(result);
     return 1;
   }
@@ -137,21 +167,20 @@ int builtin_help(tinyshell *shell, int argc, char *argv[]) {
 
 #ifdef WIN32
 int builtin_ls(tinyshell *shell, int argc, char *argv[]) {
-  const char *dir = argc <= 1 ? NULL : argv[1];
-
-  char *cwd = get_current_directory();
-  if (!cwd) {
-    puts("unable to retrieve current directory");
+  char *dir = argc <= 1 ? get_current_directory() : strdup(argv[1]);
+  if (!dir) {
+    puts("unable to get listing directory");
     return 1;
   }
 
-  printf("\nDirectory of %s\n\n", cwd);
-  free(cwd);
+  printf("\nDirectory of %s\n\n", dir);
 
   char *pattern = printf_to_string("%s\\*", dir);
   if (!pattern) {
     return 1;
   }
+
+  free(dir);
 
   WIN32_FIND_DATA file_data;
   HANDLE find = FindFirstFile(pattern, &file_data);
@@ -306,3 +335,181 @@ int builtin_ls(tinyshell *shell, int argc, char *argv[]) {
   return 0;
 }
 #endif
+
+int builtin_jobs(tinyshell *shell, int argc, char *argv[]) {
+  for (int i = 0; i < shell->bg_cap; ++i) {
+    if (shell->bg[i].status != BG_PROCESS_EMPTY) {
+      printf("job %%%d (%s): %s\n", i + 1,
+             shell->bg[i].status == BG_PROCESS_RUNNING ? "running" : "stopped",
+             shell->bg[i].cmd);
+    }
+  }
+
+  return 0;
+}
+
+static int parse_job_identifier(const tinyshell *shell, const char *job,
+                                bg_process **p) {
+  int job_index;
+  if (job[0] != '%') {
+    printf("invalid job identifier: %s\n", job);
+    return 0;
+  }
+
+  char *end;
+  errno = 0;
+  job_index = (int)strtol(&job[1], &end, 10) - 1;
+  if (end != job + strlen(job) || errno) {
+    printf("invalid job identifier: %s\n", job);
+    return 0;
+  }
+
+  if (job_index < 0 || job_index >= shell->bg_cap ||
+      shell->bg[job_index].status == BG_PROCESS_EMPTY) {
+    printf("job not found: %s\n", job);
+    return 0;
+  }
+
+  if (p) {
+    *p = &shell->bg[job_index];
+  }
+
+  return 1;
+}
+
+int builtin_kill(tinyshell *shell, int argc, char *argv[]) {
+  for (int i = 1; i < argc; ++i) {
+    bg_process *p;
+    if (!parse_job_identifier(shell, argv[i], &p)) {
+      return 1;
+    }
+
+    int status_code;
+    if (!process_kill(&p->p)) {
+      printf("unable to kill job %s\n", argv[i]);
+      return 1;
+    }
+
+    if (!process_wait_for(&p->p, &status_code)) {
+      printf("unable to wait for job to finish\n", argv[i]);
+      return 1;
+    }
+
+    if (status_code != 0) {
+      printf("job %s exited with error code %d\n", argv[i], status_code);
+    }
+
+    p->status = BG_PROCESS_EMPTY;
+    process_free(&p->p);
+  }
+
+  return 0;
+}
+
+int builtin_stop(tinyshell *shell, int argc, char *argv[]) {
+  for (int i = 1; i < argc; ++i) {
+    bg_process *p;
+    if (!parse_job_identifier(shell, argv[i], &p)) {
+      return 1;
+    }
+
+    if (p->status == BG_PROCESS_STOPPED) {
+      printf("job %s is already stopped\n", argv[i]);
+      continue;
+    }
+
+    if (!process_suspend(&p->p)) {
+      printf("unable to suspend job %s\n", argv[i]);
+      return 1;
+    }
+
+    p->status = BG_PROCESS_STOPPED;
+  }
+
+  return 0;
+}
+
+int builtin_resume(tinyshell *shell, int argc, char *argv[]) {
+  for (int i = 1; i < argc; ++i) {
+    bg_process *p;
+    if (!parse_job_identifier(shell, argv[i], &p)) {
+      return 1;
+    }
+
+    if (p->status == BG_PROCESS_RUNNING) {
+      printf("job %s is already running\n", argv[i]);
+      continue;
+    }
+
+    if (!process_resume(&p->p)) {
+      printf("unable to resume job %s\n", argv[i]);
+      return 1;
+    }
+
+    p->status = BG_PROCESS_RUNNING;
+  }
+
+  return 0;
+}
+
+static int add_path(tinyshell *shell, char **append, int free_path) {
+#ifdef WIN32
+#define DELIM ";"
+#else
+#define DELIM ":"
+#endif
+  if (!shell->path) {
+    shell->path = *append;
+    *append = NULL;
+    return 1;
+  }
+
+  char *new_path = printf_to_string("%s" DELIM "%s", shell->path, *append);
+  if (!new_path) {
+    if (free_path) {
+      free(shell->path);
+    }
+
+    return 0;
+  }
+
+  if (free_path) {
+    free(shell->path);
+  }
+
+  shell->path = new_path;
+
+  return 1;
+}
+
+int builtin_addpath(tinyshell *shell, int argc, char *argv[]) {
+  char *old_path = shell->path;
+  for (int i = 1; i < argc; ++i) {
+    if (!add_path(shell, &argv[i], i != 1)) {
+      goto fail_add_path;
+    }
+  }
+
+  free(old_path);
+  return 0;
+
+fail_add_path:
+  shell->path = old_path;
+  return 1;
+}
+
+int builtin_setpath(tinyshell *shell, int argc, char *argv[]) {
+  if (argc != 2) {
+    printf("usage: %s <new path>", argc > 0 ? argv[0] : "setpath");
+  }
+
+  free(shell->path);
+  shell->path = argv[1];
+  argv[1] = NULL;
+  return 0;
+}
+
+int builtin_path(tinyshell *shell, int argc, char *argv[]) {
+  puts(tinyshell_get_path_env(shell));
+  return 0;
+}

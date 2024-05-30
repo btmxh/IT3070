@@ -1,0 +1,4 @@
+addpath /bin
+sleep 10s &
+sleep 10s &
+jobs
