@@ -50,5 +50,6 @@ foreach(TEST_FILE ${tinyshell_TESTS})
   if(CI_TEST)
     target_compile_definitions(${execname} PRIVATE CI_TEST)
   endif()
+  target_compile_definitions(${execname} PRIVATE -DROOT_TEST="${ROOT_TEST}/")
 endforeach()
 

@@ -12,6 +12,8 @@
 
 void run_script(const char *path) {
   FILE *f = fopen(path, "r");
+  puts(path);
+  assert(f);
   tinyshell shell;
   int r = tinyshell_new(&shell, f) && tinyshell_run(&shell);
   assert(r);
