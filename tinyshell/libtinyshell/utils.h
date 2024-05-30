@@ -62,3 +62,8 @@ inline static char *reentrant_strtok(char *s, const char *sep, char **p) {
     *p = 0;
   return s;
 }
+
+inline static int string_ends_with(const char *str, const char *suffix) {
+  int str_len = strlen(str), suf_len = strlen(suffix);
+  return str_len >= suf_len && strcmp(str + str_len - suf_len, suffix) == 0;
+}
