@@ -152,7 +152,7 @@ int tinyshell_run(tinyshell *shell) {
   while (!shell->exit) {
 #ifdef WIN32
     char *cwd = get_current_directory();
-    printf("%s> ", cwd);
+    printf("%s>", cwd);
     free(cwd);
 #else
     printf("$ ");
