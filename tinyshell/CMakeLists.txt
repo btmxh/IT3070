@@ -4,6 +4,9 @@ cmake_minimum_required(VERSION 3.14)
 # Define the project, we are using C (and a little bit of C++)
 project(tinyshell LANGUAGES C CXX)
 
+option(CI_TEST "disable certain tests that could not be run on CI environments" OFF)
+string(REGEX REPLACE "\\\\" "\\\\\\\\" ROOT_TEST "${ROOT_TEST}")
+
 # Glob all source files and put them into the `shell_SOURCES` CMake variable
 file(GLOB tinyshell_SOURCES CONFIGURE_DEPENDS libtinyshell/*.h libtinyshell/*.c)
 file(GLOB tinyshell_TESTS CONFIGURE_DEPENDS tests/*.c)
@@ -38,7 +41,6 @@ enable_testing()
 set(MEMORYCHECK_COMMAND_OPTIONS "--leak-check=full --error-exitcode=1")
 include(CTest)
 
-message(${tinyshell_TESTS})
 foreach(TEST_FILE ${tinyshell_TESTS})
   cmake_path(SET path ${TEST_FILE})
   cmake_path(GET path FILENAME filename)
@@ -46,5 +48,9 @@ foreach(TEST_FILE ${tinyshell_TESTS})
   add_executable(${execname} ${TEST_FILE})
   target_link_libraries(${execname} PUBLIC libtinyshell)
   add_test(NAME ${execname} COMMAND $<TARGET_FILE:${execname}>)
+  if(CI_TEST)
+    target_compile_definitions(${execname} PRIVATE CI_TEST)
+  endif()
+  target_compile_definitions(${execname} PRIVATE -DROOT_TEST="${ROOT_TEST}/")
 endforeach()
 
