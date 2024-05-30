@@ -4,7 +4,7 @@
 
 int main() {
   tinyshell shell;
-  if(!tinyshell_new(&shell)) {
+  if(!tinyshell_new(&shell, stdin)) {
     printf("unable to initialize tinyshell\n");
   }
 

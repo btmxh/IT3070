@@ -15,20 +15,20 @@
 #include <unistd.h>
 #endif
 
-static char *get_command(int *exit) {
+static char *get_command(tinyshell *shell) {
   char *command = NULL;
   int len = 0;
   int cap = 0;
   int ch;
 
   do {
-    ch = fgetc(stdin);
+    ch = fgetc(shell->input);
     if (ch == '\n') {
       ch = '\0';
     }
     if (ch == EOF) {
       ch = '\0';
-      *exit = 1;
+      shell->exit = 1;
     }
 
     char c = (char)ch;
@@ -131,7 +131,7 @@ static void update_jobs(tinyshell *shell) {
 }
 
 // Ham nay de tao ra tinyshell moi
-int tinyshell_new(tinyshell *shell) {
+int tinyshell_new(tinyshell *shell, FILE *input) {
   current_shell = shell;
   signal(SIGINT, sigint_handler);
   shell->has_fg = 0;
@@ -139,6 +139,7 @@ int tinyshell_new(tinyshell *shell) {
   shell->bg = NULL;
   shell->bg_cap = 0;
   shell->path = NULL;
+  shell->input = input;
   return 1;
 }
 
@@ -312,8 +313,8 @@ int tinyshell_run(tinyshell *shell) {
 #else
     printf("$ ");
 #endif
-    char *command = get_command(&shell->exit);
-    if (!POSIX_WIN32(isatty)(POSIX_WIN32(fileno)(stdin))) {
+    char *command = get_command(shell);
+    if (!POSIX_WIN32(isatty)(POSIX_WIN32(fileno)(shell->input))) {
       puts(command);
     }
     process_command(shell, command, NULL);

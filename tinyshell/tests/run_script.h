@@ -11,9 +11,10 @@
 #endif
 
 void run_script(const char *path) {
-  freopen(path, "r", stdin);
+  FILE *f = fopen(path, "r");
   tinyshell shell;
-  int r = tinyshell_new(&shell) && tinyshell_run(&shell);
+  int r = tinyshell_new(&shell, f) && tinyshell_run(&shell);
   assert(r);
   tinyshell_destroy(&shell);
+  fclose(f);
 }
