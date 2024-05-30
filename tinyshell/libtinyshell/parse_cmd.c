@@ -95,8 +95,8 @@ parse_arg_result parse_arg(const char **end, char **arg, char **error) {
     parse_codepoint_result typ = parse_next_codepoint(end, &quote, c, error);
     switch (typ) {
     case PARSE_CODEPOINT_NORMAL: {
-      int n = strlen(c); // currently n == 1
-      if (!vecpush(arg, &arg_len, &arg_cap, 1, c, (int)strlen(c))) {
+      int n = (int)strlen(c); // currently n == 1
+      if (!vecpush(arg, &arg_len, &arg_cap, 1, c, n)) {
         *error = printf_to_string("unable to allocate memory for arg");
         goto fail_realloc_arg;
       }

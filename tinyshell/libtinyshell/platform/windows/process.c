@@ -98,7 +98,6 @@ int process_create(process *p, char *binary_path, const tinyshell *shell,
   STARTUPINFO info;
   memset(&info, 0, sizeof(info));
   info.cb = sizeof(info);
-  int x;
   if (CreateProcess(application_path, command_copy, NULL, NULL, FALSE, 0, NULL,
                     NULL, &info, p)) {
     if (application_path != binary_path) {
