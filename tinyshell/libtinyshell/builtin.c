@@ -400,6 +400,7 @@ int builtin_kill(tinyshell *shell, int argc, char *argv[]) {
     }
 
     p->status = BG_PROCESS_EMPTY;
+    free(p->cmd);
     process_free(&p->p);
   }
 

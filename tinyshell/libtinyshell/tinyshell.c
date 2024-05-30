@@ -125,6 +125,7 @@ static void update_jobs(tinyshell *shell) {
     if (done) {
       shell->bg[i].status = BG_PROCESS_EMPTY;
       printf("job %%%d exited with error code %d\n", i + 1, status_code);
+      free(shell->bg[i].cmd);
       process_free(&shell->bg[i].p);
     }
   }
@@ -245,6 +246,7 @@ static void process_command(tinyshell *shell, const char *command,
 
   type = "script";
   if (try_run_script(shell, parse_result.argv[0], &status_code)) {
+    command_parse_result_free(&parse_result);
     goto check_status_code;
   }
 
@@ -330,6 +332,7 @@ void tinyshell_destroy(tinyshell *shell) {
     if (shell->bg[i].status != BG_PROCESS_EMPTY) {
       process_kill(&shell->bg[i].p);
       process_wait_for(&shell->bg[i].p, NULL);
+      free(shell->bg[i].cmd);
       process_free(&shell->bg[i].p);
     }
   }
