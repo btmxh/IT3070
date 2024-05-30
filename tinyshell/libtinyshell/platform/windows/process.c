@@ -14,16 +14,15 @@ static int file_exists(const char *path) {
 };
 
 char *search_directory_for_executable(const char *arg0, const char *directory) {
-  char *file_path = printf_to_string("%s\\%s", directory, arg0);
-  if (file_path && file_exists(file_path)) {
-    return file_path;
-  }
-
-  free(file_path);
-
-  char *extensions[] = {"cmd", "exe", "bat", "com"};
+  char *extensions[] = {"", ".cmd", ".exe", ".bat", ".com"};
   for (int i = 0; i < sizeof(extensions) / sizeof(extensions[0]); i++) {
-    file_path = printf_to_string("%s\\%s.%s", directory, arg0, extensions[i]);
+    char *file_path;
+    if (directory) {
+      file_path = printf_to_string("%s\\%s%s", directory, arg0, extensions[i]);
+    } else {
+      file_path = printf_to_string("%s%s", arg0, extensions[i]);
+    }
+
     if (file_exists(file_path)) {
       return file_path;
     }
@@ -35,7 +34,7 @@ char *search_directory_for_executable(const char *arg0, const char *directory) {
 }
 
 char *find_executable(const char *arg0, const tinyshell *shell) {
-  char *executable = search_directory_for_executable(arg0, ".");
+  char *executable = search_directory_for_executable(arg0, NULL);
   if (executable) {
     return executable;
   }
@@ -64,6 +63,7 @@ char *find_executable(const char *arg0, const tinyshell *shell) {
 int process_create(process *p, char *binary_path, const tinyshell *shell,
                    const char *command, command_parse_result *parse_result,
                    char **error) {
+  char *application_path = binary_path;
   char *command_copy = printf_to_string("%s", command);
   if (!command_copy) {
     return 0;
@@ -76,15 +76,40 @@ int process_create(process *p, char *binary_path, const tinyshell *shell,
     }
   }
 
+  // for batch files, we follow the advice in the Win32 documentation page of
+  // CreateProcess
+  if (string_ends_with(binary_path, ".bat")) {
+    char *bat_command =
+        printf_to_string("C:\\Windows\\System32\\cmd.exe /c %s", command_copy);
+    application_path = printf_to_string("C:\\Windows\\System32\\cmd.exe");
+
+    if (!bat_command || !application_path) {
+      free(command_copy);
+      free(application_path);
+      free(bat_command);
+      *error = printf_to_string("out of memory");
+      return 1;
+    }
+
+    free(command_copy);
+    command_copy = bat_command;
+  }
+
   STARTUPINFO info;
   memset(&info, 0, sizeof(info));
   info.cb = sizeof(info);
-  if (CreateProcess(binary_path, command_copy, NULL, NULL, FALSE, 0, NULL, NULL,
-                    &info, p)) {
+  if (CreateProcess(application_path, command_copy, NULL, NULL, FALSE, 0, NULL,
+                    NULL, &info, p)) {
+    if (application_path != binary_path) {
+      free(binary_path);
+    }
     command_parse_result_free(parse_result);
     return 1;
   }
 
+  if (application_path != binary_path) {
+    free(application_path);
+  }
   free(command_copy);
   return 0;
 }

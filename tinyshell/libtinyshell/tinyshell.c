@@ -54,7 +54,7 @@ char *get_current_directory() {
     }
     buffer = r_buffer;
 
-    if (!getcwd(r_buffer, size)) {
+    if (!POSIX_WIN32(getcwd)(r_buffer, size)) {
       if (errno == ERANGE) {
         size *= 2;
         continue;
@@ -89,7 +89,7 @@ int tinyshell_new(tinyshell *shell) {
 
 static void process_command(tinyshell *shell, const char *command) {
   command_parse_result parse_result;
-  char *error_msg;
+  char *error_msg = NULL;
   if (!parse_command(command, &parse_result, &error_msg)) {
     if (!error_msg) {
       printf("invalid command\n");
@@ -152,7 +152,7 @@ int tinyshell_run(tinyshell *shell) {
   while (!shell->exit) {
 #ifdef WIN32
     char *cwd = get_current_directory();
-    printf("%s> ", cwd);
+    printf("%s>", cwd);
     free(cwd);
 #else
     printf("$ ");

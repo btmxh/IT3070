@@ -65,7 +65,7 @@ int builtin_cd(tinyshell *shell, int argc, char *argv[]) {
     return 1;
   }
 
-  if (chdir(argv[1])) {
+  if (POSIX_WIN32(chdir)(argv[1])) {
     printf("unable to change directory to %s\n", argv[1]);
     return 1;
   }

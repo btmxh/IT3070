@@ -1,10 +1,16 @@
 #pragma once
 
-#include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define CONCAT(x, y) x##y
+#ifdef WIN32
+#define POSIX_WIN32(func) CONCAT(_, func)
+#else
+#define POSIX_WIN32(func) func
+#endif
 
 inline static int max_int(int x, int y) { return x > y ? x : y; }
 
@@ -31,7 +37,7 @@ inline static int vecpush(void * /* T** */ dst, int *len, int *cap,
   void **dest = (void **)dst;
   const float scale_factor = 1.5;
   if (*len + srclen >= *cap) {
-    int new_cap = max_int(*cap * scale_factor, *len + srclen);
+    int new_cap = max_int((int)(*cap * scale_factor), *len + srclen);
     void *new_dest = realloc(*dest, new_cap * elemsize);
     if (!new_dest) {
       return 0;
@@ -61,4 +67,9 @@ inline static char *reentrant_strtok(char *s, const char *sep, char **p) {
   else
     *p = 0;
   return s;
+}
+
+inline static int string_ends_with(const char *str, const char *suffix) {
+  size_t str_len = strlen(str), suf_len = strlen(suffix);
+  return str_len >= suf_len && strcmp(str + str_len - suf_len, suffix) == 0;
 }
