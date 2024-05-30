@@ -11,14 +11,14 @@ int main() {
     BOOL a = CreateProcess("Debug\\child.exe", NULL, NULL, NULL, FALSE, 0, NULL,NULL, &info,&out);
 
     if(a == FALSE) {
-        printf("%d", GetLastError());
+        printf("%lld", (long long)GetLastError());
         exit(1);
     }
     WaitForSingleObject(out.hProcess, 1000);
     TerminateProcess(out.hProcess, 1);
     CloseHandle(out.hProcess);
     CloseHandle(out.hThread);
-        printf("%d", GetLastError());
+        printf("%lld", (long long)GetLastError());
 
     return 0;
 }
