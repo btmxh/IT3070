@@ -55,7 +55,7 @@ char *get_current_directory() {
     }
     buffer = r_buffer;
 
-    if (!getcwd(r_buffer, size)) {
+    if (!POSIX_WIN32(getcwd)(r_buffer, size)) {
       if (errno == ERANGE) {
         size *= 2;
         continue;
