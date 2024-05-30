@@ -41,8 +41,24 @@ inline static int vecpush(void * /* T** */ dst, int *len, int *cap,
     *cap = new_cap;
   }
 
-  memcpy((char*)*dest + *len * elemsize, src, srclen * elemsize);
+  memcpy((char *)*dest + *len * elemsize, src, srclen * elemsize);
   *len += srclen;
   return 1;
 }
 
+// reentrant version of strtok, reimplemented here for portability
+// source: https://git.musl-libc.org/cgit/musl/tree/src/string/strtok_r.c
+// (C11 restrict removed, renamed to avoid collision)
+inline static char *reentrant_strtok(char *s, const char *sep, char **p) {
+  if (!s && !(s = *p))
+    return NULL;
+  s += strspn(s, sep);
+  if (!*s)
+    return *p = 0;
+  *p = s + strcspn(s, sep);
+  if (**p)
+    *(*p)++ = 0;
+  else
+    *p = 0;
+  return s;
+}

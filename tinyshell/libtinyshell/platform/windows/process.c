@@ -49,14 +49,13 @@ char *find_executable(const char *arg0, const tinyshell *shell) {
     return NULL;
   }
 
-  char *dir = strtok(path, ";");
-  while (dir) {
+  char *saveptr;
+  for (char *dir = reentrant_strtok(path, ";", &saveptr); dir;
+       dir = reentrant_strtok(NULL, ";", &saveptr)) {
     executable = search_directory_for_executable(arg0, dir);
     if (executable) {
       return executable;
     }
-
-    dir = strtok(NULL, ";");
   }
 
   return NULL;

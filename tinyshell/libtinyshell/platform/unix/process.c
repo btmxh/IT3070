@@ -54,14 +54,14 @@ static char *find_executable_no_slash(const char *arg0,
     return NULL;
   }
 
-  char *token = strtok(path, ":");
-  char *binary_path = NULL;
-  while (token != NULL) {
+  char *binary_path = NULL, *saveptr;
+  for (char *token = reentrant_strtok(path, ":", &saveptr); token;
+       token = reentrant_strtok(NULL, ":", &saveptr)) {
     binary_path = printf_to_string("%s/%s", token, arg0);
     if (binary_path != NULL && check_executable(binary_path)) {
       break;
     }
-    token = strtok(NULL, ":");
+
     free(binary_path);
     binary_path = NULL;
   }
