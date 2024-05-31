@@ -210,7 +210,7 @@ int builtin_help(tinyshell *shell, int argc, char *argv[]) {
 "For Windows batch files (*.bat), tinyshell uses cmd.exe internally to process\n"
 "those scripts.\n"
 "\n"
-"Custom mini scripts languages are also supported: tinyshell script (.tsh) and\n"
+"Custom mini scripting languages are also supported: tinyshell script (.tsh) and\n"
 "tinyshell batch script (.tbat). The shell simply execute the scripts line by\n"
 "line. *.tsh is only supported on Unix/POSIX, and *.tbat is only supported on\n"
 "Windows.\n"
