@@ -161,7 +161,61 @@ int builtin_exit(tinyshell *shell, int argc, char *argv[]) {
 }
 
 int builtin_help(tinyshell *shell, int argc, char *argv[]) {
-  printf("Hello World");
+  printf(
+// clang-format off
+"= tinyshell (pre-release version)\n"
+"Git reposistory: https://github.com/btmxh/IT3070 (in the `tinyshell` directory)\n"
+"\n"
+"= Builtin commands\n"
+"- `exit`      - exit this shell\n"
+"- `help`      - print help\n"
+"- `cd`        - change directory\n"
+"- `pwd`       - print working directory\n"
+"- `date/time` - print current date/time\n"
+"                provide an optional format to customize the output\n"
+"                the format is interpreted as defined here:\n"
+"                (https://en.cppreference.com/w/c/chrono/strftime)\n"
+"                the only differences between date/time are the default format\n"
+"- `ls/dir`    - print information about files in a directory\n"
+"                (default: the current working directory).\n"
+"                add option `-l` to print more details\n"
+"- `jobs`      - print all currently active jobs (background process)\n"
+"                to create a new job, append an ampersand (&) to the command\n"
+"                when launching a process\n"
+"- `kill`      - kill jobs specified in the arguments\n"
+"- `stop`      - stop jobs specified in the arguments\n"
+"- `resume`    - resume jobs specified in the arguments\n"
+"- `setpath`   - set the shell PATH to the value specified in the argument\n"
+"                note that when processes are started, the shell will not pass\n"
+"                the PATH environment variable to the process\n"
+"- `addpath`   - add paths to the shell PATH. use `setpath` to clear this value\n"
+"- `path`      - print the current shell PATH\n"
+"                the separator between paths is system-dependent:\n"
+"                Win32 - ';', Unix/POSIX - ':'\n"
+"\n"
+"= Jobs and processes\n"
+"\n"
+"Enter a command to launch a new process using that command.\n"
+"\n"
+"The arguments are internally processed to match the behavior of the current OS.\n"
+"\n"
+"Add an ampersand ('&') to the end of the command to launch as a job\n"
+"(background process).\n"
+"\n"
+"Use CTRL+C to cancel a currently running process. This is a SIGINT on Unix, so\n"
+"the process could catch the signal and refuse to terminate.\n"
+"\n"
+"= Scripts\n"
+"\n"
+"For Windows batch files (*.bat), tinyshell uses cmd.exe internally to process\n"
+"those scripts.\n"
+"\n"
+"Custom mini scripts languages are also supported: tinyshell script (.tsh) and\n"
+"tinyshell batch script (.tbat). The shell simply execute the scripts line by\n"
+"line. *.tsh is only supported on Unix/POSIX, and *.tbat is only supported on\n"
+"Windows.\n"
+// clang-format on
+  );
   return 0;
 }
 
