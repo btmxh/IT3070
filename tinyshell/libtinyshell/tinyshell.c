@@ -79,12 +79,30 @@ static void sigint_handler(int s) {
   }
 }
 
+// mutex lock/unlock failure basically never happen
+void tinyshell_lock_bg_procs(tinyshell *shell) {
+  int ret = mtx_lock(&shell->bg_lock);
+  if (ret != thrd_success) {
+    exit(1);
+  }
+}
+
+void tinyshell_unlock_bg_procs(tinyshell *shell) {
+  int ret = mtx_unlock(&shell->bg_lock);
+  if (ret != thrd_success) {
+    exit(1);
+  }
+}
+
 static int find_bg_job_index(tinyshell *shell, int *index) {
+  tinyshell_lock_bg_procs(shell);
   for (int i = 0; i < shell->bg_cap; ++i) {
     if (shell->bg->status == BG_PROCESS_EMPTY) {
       if (index) {
         *index = i;
       }
+
+      tinyshell_unlock_bg_procs(shell);
       return 1;
     }
   }
@@ -93,6 +111,7 @@ static int find_bg_job_index(tinyshell *shell, int *index) {
   int new_cap = shell->bg_cap * 2 + 1;
   bg_process *new_bg = realloc(shell->bg, new_cap * sizeof *new_bg);
   if (!new_bg) {
+    tinyshell_unlock_bg_procs(shell);
     return 0;
   }
 
@@ -107,28 +126,45 @@ static int find_bg_job_index(tinyshell *shell, int *index) {
 
   shell->bg_cap = new_cap;
   shell->bg = new_bg;
+  tinyshell_unlock_bg_procs(shell);
 
   return 1;
 }
 
 static void update_jobs(tinyshell *shell) {
+  tinyshell_lock_bg_procs(shell);
   for (int i = 0; i < shell->bg_cap; ++i) {
-    if (shell->bg[i].status == BG_PROCESS_EMPTY) {
-      continue;
-    }
-
-    int status_code, done;
-    if (!process_try_wait_for(&shell->bg[i].p, &status_code, &done)) {
-      continue;
-    }
-
-    if (done) {
+    if (shell->bg[i].status == BG_PROCESS_FINISHED) {
+      // join the background process thread
+      thrd_join(shell->bg[i].thread, NULL);
       shell->bg[i].status = BG_PROCESS_EMPTY;
-      printf("job %%%d exited with error code %d\n", i + 1, status_code);
-      free(shell->bg[i].cmd);
-      process_free(&shell->bg[i].p);
     }
   }
+  tinyshell_unlock_bg_procs(shell);
+}
+
+static int bg_process_thread(void *data) {
+  int index = (int)(size_t)data;
+
+  tinyshell_lock_bg_procs(current_shell);
+  process p = current_shell->bg[index].p;
+  tinyshell_unlock_bg_procs(current_shell);
+
+  int status_code;
+  if (!process_wait_for(&p, &status_code)) {
+    status_code = -1;
+  }
+
+  printf("job %%%d exited with error code %d\n", index + 1, status_code);
+
+  tinyshell_lock_bg_procs(current_shell);
+  bg_process *bg = &current_shell->bg[index];
+  process_free(&bg->p);
+  free(bg->cmd);
+  bg->status = BG_PROCESS_FINISHED;
+  tinyshell_unlock_bg_procs(current_shell);
+
+  return status_code;
 }
 
 // Ham nay de tao ra tinyshell moi
@@ -138,6 +174,10 @@ int tinyshell_new(tinyshell *shell, FILE *input) {
   shell->has_fg = 0;
   shell->exit = false;
   shell->bg = NULL;
+  if (mtx_init(&shell->bg_lock, mtx_plain) != thrd_success) {
+    printf("unable to initialize jobs lock\n");
+    return 0;
+  }
   shell->bg_cap = 0;
   shell->path = NULL;
   shell->input = input;
@@ -285,9 +325,14 @@ static void process_command(tinyshell *shell, const char *command,
     shell->has_fg = 0;
     process_free(&p);
   } else {
-    shell->bg[bg_job_index].p = p;
-    shell->bg[bg_job_index].status = BG_PROCESS_RUNNING;
-    shell->bg[bg_job_index].cmd = printf_to_string("%s", command);
+    tinyshell_lock_bg_procs(shell);
+    bg_process *bg = &shell->bg[bg_job_index];
+    bg->p = p;
+    bg->status = BG_PROCESS_RUNNING;
+    bg->cmd = printf_to_string("%s", command);
+    // FIXME: properly allocate bg_job_index
+    thrd_create(&bg->thread, bg_process_thread, (void *)(size_t)bg_job_index);
+    tinyshell_unlock_bg_procs(shell);
   }
 
 check_status_code:
@@ -328,14 +373,22 @@ int tinyshell_run(tinyshell *shell) {
 }
 
 void tinyshell_destroy(tinyshell *shell) {
+  tinyshell_lock_bg_procs(shell);
   for (int i = 0; i < shell->bg_cap; ++i) {
-    if (shell->bg[i].status != BG_PROCESS_EMPTY) {
-      process_kill(&shell->bg[i].p);
-      process_wait_for(&shell->bg[i].p, NULL);
-      free(shell->bg[i].cmd);
-      process_free(&shell->bg[i].p);
+    if (shell->bg[i].status == BG_PROCESS_EMPTY) {
+      continue;
     }
+
+    if (shell->bg[i].status != BG_PROCESS_FINISHED) {
+      process_kill(&shell->bg[i].p);
+    }
+
+    tinyshell_unlock_bg_procs(shell);
+    thrd_join(shell->bg[i].thread, NULL);
+    tinyshell_lock_bg_procs(shell);
   }
+  tinyshell_unlock_bg_procs(shell);
+  mtx_destroy(&shell->bg_lock);
 
   free(shell->bg);
   free(shell->path);

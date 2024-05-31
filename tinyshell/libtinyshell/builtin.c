@@ -338,13 +338,16 @@ int builtin_ls(tinyshell *shell, int argc, char *argv[]) {
 #endif
 
 int builtin_jobs(tinyshell *shell, int argc, char *argv[]) {
+  tinyshell_lock_bg_procs(shell);
   for (int i = 0; i < shell->bg_cap; ++i) {
-    if (shell->bg[i].status != BG_PROCESS_EMPTY) {
+    if (shell->bg[i].status != BG_PROCESS_EMPTY &&
+        shell->bg[i].status != BG_PROCESS_FINISHED) {
       printf("job %%%d (%s): %s\n", i + 1,
              shell->bg[i].status == BG_PROCESS_RUNNING ? "running" : "stopped",
              shell->bg[i].cmd);
     }
   }
+  tinyshell_unlock_bg_procs(shell);
 
   return 0;
 }
@@ -379,6 +382,7 @@ static int parse_job_identifier(const tinyshell *shell, const char *job,
 }
 
 int builtin_kill(tinyshell *shell, int argc, char *argv[]) {
+  tinyshell_lock_bg_procs(shell);
   for (int i = 1; i < argc; ++i) {
     bg_process *p;
     if (!parse_job_identifier(shell, argv[i], &p)) {
@@ -391,24 +395,17 @@ int builtin_kill(tinyshell *shell, int argc, char *argv[]) {
       return 1;
     }
 
-    if (!process_wait_for(&p->p, &status_code)) {
-      printf("unable to wait for job %s to finish\n", argv[i]);
-      return 1;
-    }
-
-    if (status_code != 0) {
-      printf("job %s exited with error code %d\n", argv[i], status_code);
-    }
-
+    tinyshell_unlock_bg_procs(shell);
+    thrd_join(p->thread, NULL);
     p->status = BG_PROCESS_EMPTY;
-    free(p->cmd);
-    process_free(&p->p);
   }
+  tinyshell_unlock_bg_procs(shell);
 
   return 0;
 }
 
 int builtin_stop(tinyshell *shell, int argc, char *argv[]) {
+  tinyshell_lock_bg_procs(shell);
   for (int i = 1; i < argc; ++i) {
     bg_process *p;
     if (!parse_job_identifier(shell, argv[i], &p)) {
@@ -427,11 +424,13 @@ int builtin_stop(tinyshell *shell, int argc, char *argv[]) {
 
     p->status = BG_PROCESS_STOPPED;
   }
+  tinyshell_unlock_bg_procs(shell);
 
   return 0;
 }
 
 int builtin_resume(tinyshell *shell, int argc, char *argv[]) {
+  tinyshell_lock_bg_procs(shell);
   for (int i = 1; i < argc; ++i) {
     bg_process *p;
     if (!parse_job_identifier(shell, argv[i], &p)) {
@@ -450,6 +449,7 @@ int builtin_resume(tinyshell *shell, int argc, char *argv[]) {
 
     p->status = BG_PROCESS_RUNNING;
   }
+  tinyshell_unlock_bg_procs(shell);
 
   return 0;
 }
