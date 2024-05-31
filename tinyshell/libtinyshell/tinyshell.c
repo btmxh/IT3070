@@ -151,7 +151,7 @@ static char *read_file(const char *path) {
   FILE *f = NULL;
   char *buffer = NULL;
 
-  f = fopen(path, "r");
+  f = fopen(path, "rb");
   if (!f) {
     printf("unable to open script file: %s\n", path);
     return NULL;
