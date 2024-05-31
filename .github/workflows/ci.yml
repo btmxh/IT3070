@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install valgrind
-        run: sudo apt-get install valgrind
+        run: sudo apt-get update && sudo apt-get install valgrind
         if: matrix.os == 'ubuntu-22.04'
       - name: Configure
         run: cmake -Stinyshell -Btinyshell/build -DCMAKE_BUILD_TYPE=Debug -DCI_TEST=ON -DROOT_TEST="${{ github.workspace }}/tinyshell"
