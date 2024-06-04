@@ -101,7 +101,7 @@ int process_create(process *p, char *binary_path, const tinyshell *shell,
 
   // trim command_line to remove all non-space (ASCII 0x20) space
   // characters (isspace returns true)
-  char* end = command_copy + strlen(command_copy);
+  char* end = command_copy + strlen(command_copy) - 1;
   while(end >= command_copy && isspace(*end)) {
     *end-- = '\0';
   }
