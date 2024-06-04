@@ -74,6 +74,7 @@ char *get_current_directory() {
 static tinyshell *current_shell;
 
 static void sigint_handler(int s) {
+  signal(SIGINT, sigint_handler);
   if (current_shell->has_fg) {
     process_kill(&current_shell->fg);
   }
