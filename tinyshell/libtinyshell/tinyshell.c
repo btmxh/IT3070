@@ -94,10 +94,23 @@ void tinyshell_unlock_bg_procs(tinyshell *shell) {
   }
 }
 
-static int find_bg_job_index(tinyshell *shell, int *index) {
+static void update_jobs(tinyshell *shell) {
   tinyshell_lock_bg_procs(shell);
   for (int i = 0; i < shell->bg_cap; ++i) {
-    if (shell->bg->status == BG_PROCESS_EMPTY) {
+    if (shell->bg[i].status == BG_PROCESS_FINISHED) {
+      // join the background process thread
+      thrd_join(shell->bg[i].thread, NULL);
+      shell->bg[i].status = BG_PROCESS_EMPTY;
+    }
+  }
+  tinyshell_unlock_bg_procs(shell);
+}
+
+static int find_bg_job_index(tinyshell *shell, int *index) {
+  update_jobs(shell);
+  tinyshell_lock_bg_procs(shell);
+  for (int i = 0; i < shell->bg_cap; ++i) {
+    if (shell->bg[i].status == BG_PROCESS_EMPTY) {
       if (index) {
         *index = i;
       }
@@ -129,18 +142,6 @@ static int find_bg_job_index(tinyshell *shell, int *index) {
   tinyshell_unlock_bg_procs(shell);
 
   return 1;
-}
-
-static void update_jobs(tinyshell *shell) {
-  tinyshell_lock_bg_procs(shell);
-  for (int i = 0; i < shell->bg_cap; ++i) {
-    if (shell->bg[i].status == BG_PROCESS_FINISHED) {
-      // join the background process thread
-      thrd_join(shell->bg[i].thread, NULL);
-      shell->bg[i].status = BG_PROCESS_EMPTY;
-    }
-  }
-  tinyshell_unlock_bg_procs(shell);
 }
 
 static int bg_process_thread(void *data) {
