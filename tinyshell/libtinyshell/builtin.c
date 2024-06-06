@@ -56,7 +56,7 @@ int try_run_builtin(tinyshell *shell, command_parse_result *result,
     *status_code = builtin_ls(shell, result->argc, result->argv);
     command_parse_result_free(result);
     return 1;
-  } else if (strcmp(arg0, "jobs") == 0) {
+  } else if (strcmp(arg0, "jobs") == 0 || strcmp(arg0, "list")) {
     *status_code = builtin_jobs(shell, result->argc, result->argv);
     command_parse_result_free(result);
     return 1;
@@ -220,31 +220,29 @@ int builtin_help(tinyshell *shell, int argc, char *argv[]) {
 }
 
 #ifdef _WIN32
-int builtin_ls(tinyshell *shell, int argc, char *argv[]) {
-  char *dir =
-      argc <= 1 ? get_current_directory() : printf_to_string("%s", argv[1]);
-  if (!dir) {
-    puts("unable to get listing directory");
-    return 1;
+static int exec_ls(const char* dir, int show_details) {
+  if(show_details) {
+    printf("\nDirectory of %s\n\n", dir);
   }
-
-  printf("\nDirectory of %s\n\n", dir);
 
   char *pattern = printf_to_string("%s\\*", dir);
   if (!pattern) {
     return 1;
   }
 
-  free(dir);
-
   WIN32_FIND_DATA file_data;
   HANDLE find = FindFirstFile(pattern, &file_data);
   if (find == INVALID_HANDLE_VALUE) {
     free(pattern);
-    return 0;
+    return 1;
   }
 
   do {
+    if(!show_details) {
+      puts(file_data.cFileName);
+      continue;
+    }
+
     SYSTEMTIME last_access_time;
     if (!FileTimeToSystemTime(&file_data.ftLastAccessTime, &last_access_time)) {
       puts("error converting last access time");
@@ -305,12 +303,64 @@ static int compare(const void *a, const void *b) {
   return strcmp(ea->d_name, eb->d_name);
 }
 
-int builtin_ls(tinyshell *shell, int argc, char *argv[]) {
+static int exec_ls(const char* dir, int show_details) {
   DIR *pDir;
   struct stat fileStat;
-  int showDetails = 0;
   struct dirent *entries = NULL;
   int entries_len = 0, entries_cap = 0;
+
+  pDir = opendir(dir);
+
+  if (pDir == NULL) {
+    printf("cannot open directory '%s'\n", dir);
+    return 1;
+  }
+
+  // Đọc các entry trong thư mục và lưu tên vào mảng
+  struct dirent *entry;
+  while ((entry = readdir(pDir)) != NULL) {
+    vecpush(&entries, &entries_len, &entries_cap, sizeof *entry, entry, 1);
+  }
+
+  closedir(pDir);
+
+  // Sắp xếp các mục theo thứ tự bảng chữ cái
+  qsort(entries, entries_len, sizeof *entries, compare);
+
+  // In ra tên các mục
+  printf("total %d\n", entries_len);
+  for (int i = 0; i < entries_len; i++) {
+    if (show_details) {
+      char* name = printf_to_string("%s/%s", dir, entries[i].d_name);
+      if(!name) {
+        puts("error formatting path");
+        continue;
+      }
+
+      if (stat(name, &fileStat) < 0) {
+        perror("stat");
+        continue;
+      }
+      printPermissions(fileStat.st_mode);
+      printf("%ld ", fileStat.st_nlink);
+      printf("%s ", getpwuid(fileStat.st_uid)->pw_name);
+      printf("%s ", getgrgid(fileStat.st_gid)->gr_name);
+      printf("%5ld ", fileStat.st_size);
+
+      char timeBuf[80];
+      struct tm *timeInfo = localtime(&fileStat.st_mtime);
+      strftime(timeBuf, sizeof(timeBuf), "%m-%d-%Y", timeInfo);
+      printf("%s ", timeBuf);
+    }
+    printf("%s\n", entries[i].d_name);
+  }
+
+  free(entries); // Giải phóng bộ nhớ sau khi in
+  return 0;
+}
+#endif
+int builtin_ls(tinyshell *shell, int argc, char *argv[]) {
+  int showDetails = 0;
 
   // Kiểm tra các tham số đầu vào
   if (argc > 3) {
@@ -346,50 +396,8 @@ int builtin_ls(tinyshell *shell, int argc, char *argv[]) {
     dir_path = ".";
   }
 
-  pDir = opendir(dir_path);
-
-  if (pDir == NULL) {
-    printf("Cannot open directory '%s'\n", dir_path);
-    return 1;
-  }
-
-  // Đọc các entry trong thư mục và lưu tên vào mảng
-  struct dirent *entry;
-  while ((entry = readdir(pDir)) != NULL) {
-    vecpush(&entries, &entries_len, &entries_cap, sizeof *entry, entry, 1);
-  }
-
-  closedir(pDir);
-
-  // Sắp xếp các mục theo thứ tự bảng chữ cái
-  qsort(entries, entries_len, sizeof *entries, compare);
-
-  // In ra tên các mục
-  printf("total %d\n", entries_len);
-  for (int i = 0; i < entries_len; i++) {
-    if (showDetails) {
-      if (stat(entries[i].d_name, &fileStat) < 0) {
-        perror("stat");
-        continue;
-      }
-      printPermissions(fileStat.st_mode);
-      printf("%ld ", fileStat.st_nlink);
-      printf("%s ", getpwuid(fileStat.st_uid)->pw_name);
-      printf("%s ", getgrgid(fileStat.st_gid)->gr_name);
-      printf("%5ld ", fileStat.st_size);
-
-      char timeBuf[80];
-      struct tm *timeInfo = localtime(&fileStat.st_mtime);
-      strftime(timeBuf, sizeof(timeBuf), "%m-%d-%Y", timeInfo);
-      printf("%s ", timeBuf);
-    }
-    printf("%s\n", entries[i].d_name);
-  }
-
-  free(entries); // Giải phóng bộ nhớ sau khi in
-  return 0;
+  return exec_ls(dir_path, showDetails);
 }
-#endif
 
 int builtin_jobs(tinyshell *shell, int argc, char *argv[]) {
   tinyshell_lock_bg_procs(shell);
