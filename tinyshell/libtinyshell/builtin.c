@@ -10,7 +10,7 @@
 #include <string.h>
 #include <time.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <direct.h>
 #include <fileapi.h>
 #include <handleapi.h>
@@ -219,7 +219,7 @@ int builtin_help(tinyshell *shell, int argc, char *argv[]) {
   return 0;
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 int builtin_ls(tinyshell *shell, int argc, char *argv[]) {
   char *dir =
       argc <= 1 ? get_current_directory() : printf_to_string("%s", argv[1]);
@@ -509,7 +509,7 @@ int builtin_resume(tinyshell *shell, int argc, char *argv[]) {
 }
 
 static int add_path(tinyshell *shell, char **append, int free_path) {
-#ifdef WIN32
+#ifdef _WIN32
 #define DELIM ";"
 #else
 #define DELIM ":"

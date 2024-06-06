@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <utils.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <direct.h>
 #include <io.h>
 #else
@@ -234,7 +234,7 @@ fail:
 
 static int try_run_script(tinyshell *shell, const char *path,
                           int *status_code) {
-#ifdef WIN32
+#ifdef _WIN32
   const char extension[] = ".tbat";
 #else
   if (!strchr(path, '/')) {
@@ -328,6 +328,7 @@ static void process_command(tinyshell *shell, const char *command,
     process_free(&p);
   } else {
     tinyshell_lock_bg_procs(shell);
+    printf("job %%%d started: %s", bg_job_index + 1, command);
     bg_process *bg = &shell->bg[bg_job_index];
     bg->p = p;
     bg->status = BG_PROCESS_RUNNING;
@@ -355,12 +356,12 @@ fail:
 int tinyshell_run(tinyshell *shell) {
   while (!shell->exit) {
     update_jobs(shell);
-#ifdef WIN32
+#ifdef _WIN32
     char *cwd = get_current_directory();
-    printf("%s>", cwd);
+    printf("TS %s>", cwd);
     free(cwd);
 #else
-    printf("$ ");
+    printf("tinyshell$ ");
 #endif
     char *command = get_command(shell);
     if (!POSIX_WIN32(isatty)(POSIX_WIN32(fileno)(shell->input))) {

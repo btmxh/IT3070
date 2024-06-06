@@ -1,7 +1,7 @@
 #pragma once
 
 #include "parse_cmd.h"
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 typedef PROCESS_INFORMATION process;
 #else

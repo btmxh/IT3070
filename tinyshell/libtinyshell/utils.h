@@ -6,7 +6,7 @@
 #include <string.h>
 
 #define CONCAT(x, y) x##y
-#ifdef WIN32
+#ifdef _WIN32
 #define POSIX_WIN32(func) CONCAT(_, func)
 #else
 #define POSIX_WIN32(func) func

@@ -49,7 +49,7 @@ int main() {
   check_testcase("echo \"", NULL);
   check_testcase("echo \'\"", NULL);
   check_testcase("echo \"\'\"", (const char*[]) {"echo", "\'", NULL});
-#ifndef WIN32
+#ifndef _WIN32
   check_testcase("echo \'\"\'", (const char*[]) {"echo", "\"", NULL});
   check_testcase("echo \\\'", (const char*[]) {"echo", "\'", NULL});
   check_testcase("echo \\0", (const char*[]) {"echo", "0", NULL});
@@ -57,7 +57,7 @@ int main() {
   check_testcase("echo \\ \\", NULL);
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
   check_testcase("echo ^\'", (const char*[]) {"echo", "\'", NULL});
   check_testcase("echo ^0", (const char*[]) {"echo", "0", NULL});
   check_testcase("echo ^ ^ ", (const char*[]) {"echo", "  ", NULL});

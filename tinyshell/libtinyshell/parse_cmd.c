@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #define ESCAPE_CHAR '^'
 #define IS_QUOTE(c) ((c) == '"')
 #else
