@@ -56,7 +56,7 @@ int try_run_builtin(tinyshell *shell, command_parse_result *result,
     *status_code = builtin_ls(shell, result->argc, result->argv);
     command_parse_result_free(result);
     return 1;
-  } else if (strcmp(arg0, "jobs") == 0 || strcmp(arg0, "list")) {
+  } else if (strcmp(arg0, "jobs") == 0 || strcmp(arg0, "list") == 0) {
     *status_code = builtin_jobs(shell, result->argc, result->argv);
     command_parse_result_free(result);
     return 1;
