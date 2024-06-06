@@ -11,6 +11,8 @@ string(REGEX REPLACE "\\\\" "\\\\\\\\" ROOT_TEST "${ROOT_TEST}")
 file(GLOB tinyshell_SOURCES CONFIGURE_DEPENDS libtinyshell/*.h libtinyshell/*.c)
 file(GLOB tinyshell_TESTS CONFIGURE_DEPENDS tests/*.c)
 
+add_subdirectory(tinycthread)
+
 # Glob platform source files
 if(UNIX)
   file(GLOB tinyshell_PLATFORM_SOURCES CONFIGURE_DEPENDS libtinyshell/platform/unix/*.h libtinyshell/platform/unix/*.c)
@@ -29,6 +31,7 @@ list(APPEND tinyshell_TESTS ${tinyshell_PLATFORM_TESTS})
 # in the `tinyshell_SOURCES` variable
 add_library(libtinyshell ${tinyshell_SOURCES})
 target_include_directories(libtinyshell PUBLIC libtinyshell)
+target_link_libraries(libtinyshell PUBLIC tinycthread)
 
 if(WIN32)
   target_link_libraries(libtinyshell PRIVATE shlwapi)
